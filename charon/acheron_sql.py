@@ -233,7 +233,7 @@ class CharonDocumentTracker:
             doc['analysis_status'] = 'TO_ANALYZE'
 
             remote_sample=self.get_charon_sample(sample.name)
-            if remote_sample and remote_sample['status'] == 'STALE' and self.seqruns_for_sample(sample.name) == self.remote_seqruns_for_sample(sample.name):
+            if remote_sample and remote_sample.get('status') == 'STALE' and self.seqruns_for_sample(sample.name) == self.remote_seqruns_for_sample(sample.name):
                 doc['status'] = 'STALE'
 
             for udf in sample.udfs:
