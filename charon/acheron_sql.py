@@ -344,7 +344,7 @@ class CharonDocumentTracker:
                             self.logger.error("project {0} failed to be updated : {1}".format(doc['projectid'], rq.text))
                     else:
                         pj = r.json()
-                        merged = merge(pj, doc)
+                        merged = merge(doc, pj)
                         if merged != pj:
                             rq = session.put(url, headers=headers, data=json.dumps(merged))
                             if rq.status_code == requests.codes.no_content:
