@@ -233,7 +233,7 @@ class CharonDocumentTracker:
             doc['analysis_status'] = 'TO_ANALYZE'
 
             remote_sample=self.get_charon_sample(sample.name)
-            if remote_sample and remote_sample['status'] == 'STALE' and self.seqruns_for_sample(sample.name) == self.remote_seqruns_for_sample(sample.name):
+            if remote_sample and remote_sample.get('status') == 'STALE' and self.seqruns_for_sample(sample.name) == self.remote_seqruns_for_sample(sample.name):
                 doc['status'] = 'STALE'
 
             for udf in sample.udfs:
@@ -344,7 +344,7 @@ class CharonDocumentTracker:
                             self.logger.error("project {0} failed to be updated : {1}".format(doc['projectid'], rq.text))
                     else:
                         pj = r.json()
-                        merged = merge(pj, doc)
+                        merged = merge(doc, pj)
                         if merged != pj:
                             rq = session.put(url, headers=headers, data=json.dumps(merged))
                             if rq.status_code == requests.codes.no_content:
