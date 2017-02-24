@@ -63,6 +63,8 @@ class ProjectSaver(sav.Saver):
                           description='The location of the samples'),
               sav.Field('uppnex_id',
                     description='Uppnex ID associated to the project')
+              sav.Field('delivery_token',
+                    description='Delivery token from mover')
               ]
 
 
