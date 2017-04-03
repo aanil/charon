@@ -199,6 +199,7 @@ class CharonDocumentTracker:
         doc['projectid'] = self.project.luid
         doc['status'] = 'OPEN'
         doc['name'] = self.project.name
+        doc['delivery_token'] = 'not_under_delivery'
 
         for udf in self.project.udfs:
             if udf.udfname == 'Bioinformatic QC':
