@@ -289,9 +289,10 @@ class Saver(object):
             self.db.save(self.doc)
         except couchdb.http.ResourceConflict:
             raise IOError('document revision update conflict')
-        utils.log(self.db, self.doc,
-                  changed=self.changed,
-                  current_user=self.current_user)
+        if self.changed:
+            utils.log(self.db, self.doc,
+                      changed=self.changed,
+                      current_user=self.current_user)
 
     def __setitem__(self, key, value):
         "Update the key/value pair."
