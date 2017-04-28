@@ -36,6 +36,8 @@ class SampleSaver(sav.Saver):
                           options=cst.SAMPLE_ANALYSIS_STATUS.values()),
               sav.SelectField('delivery_status', title='Delivery status',
                     description='The delivery status of the sample.', options=cst.DELIVERY_STATUS.values()),
+              sav.SelectField('delivery_token', title='Delivery token',
+                    description='The delivery token from mover.'),
               sav.SelectField('status', title='status',
                     description='The internal status of the sample.', options=cst.SEQUENCING_STATUS.values()),
               sav.SelectField('qc', title='QC',
