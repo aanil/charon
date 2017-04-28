@@ -92,6 +92,39 @@ class Field(object):
             return entity.get(self.key) or '-'
 
 
+class ListField(Field):
+    type = "list"
+
+    def __init__(self, key, title=None, description=None, default=[]):
+        super(ListField, self).__init__(key, title=title,
+                                      description=description,
+                                      mandatory=True, editable=True,
+                                      default=default)
+        self.none_value = []
+
+    def process(self, saver, value):
+        self.check_mandatory(saver, value)
+        old_value = saver.doc.get(self.key)
+        if old_value is None:
+            old_value=[]
+        if value not in [None, '']: 
+            if isinstance(value, list):
+                old_value.extend(value)
+            elif value.startswith('[') and value.endswith(']'):
+                old_value=[]
+                #assume it's a serialized list
+                values=value[1:-1].split(",")
+                for val in values:
+                    if val.strip().startswith("u'") and val.endswith("'"):
+                        old_value.append(val[2:-1])
+                    else:
+                        old_value.append(val)
+            else:
+                old_value.append(value)
+        return old_value
+    
+    
+
 class IdField(Field):
     "The identifier for the entity."
 
