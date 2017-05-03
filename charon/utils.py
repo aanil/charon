@@ -145,7 +145,8 @@ def log(db, doc, changed={}, current_user=None):
             entry['operator'] = current_user['email']
     except KeyError:
         pass
-    db.save(entry)
+    if changed:
+        db.save(entry)
 
 def cmp_timestamp(i, j):
     "Compare the two documents by their 'timestamp' values."

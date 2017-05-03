@@ -326,6 +326,7 @@ def prepareData(projname):
         data['sequencing_facility']="NGI-S"
         data['best_practice_analysis']="whole_genome_reseq"
         data['status']='OPEN'
+        data['delivery_token']='not_under_delivery'
         if 'Uppnex ID' in proj.udf:
             data['uppnex_id']=proj.udf['Uppnex ID']
         data['samples']={}

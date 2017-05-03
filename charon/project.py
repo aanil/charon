@@ -51,6 +51,10 @@ class ProjectSaver(sav.Saver):
                           options=cst.PROJECT_STATUS.values()),
               sav.SelectField('delivery_status', description='The delivery status of the project.',
                           options=cst.DELIVERY_STATUS.values()),
+              sav.Field('delivery_token',
+                    description='Delivery token from mover'),
+              sav.ListField('delivery_projects', title='Delivery projects',
+                    description='The delivery projects that this project was delivered to.', default=[]),
               sav.Field('pipeline',
                     description='Pipeline to use for project data analysis.'),
               sav.Field('reference',
@@ -62,9 +66,7 @@ class ProjectSaver(sav.Saver):
                           options=cst.SEQ_FACILITIES,
                           description='The location of the samples'),
               sav.Field('uppnex_id',
-                    description='Uppnex ID associated to the project')
-              sav.Field('delivery_token',
-                    description='Delivery token from mover')
+                    description='Uppnex ID associated to the project'),
               ]
 
 
