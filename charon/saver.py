@@ -98,7 +98,7 @@ class ListField(Field):
     def __init__(self, key, title=None, description=None, default=[]):
         super(ListField, self).__init__(key, title=title,
                                       description=description,
-                                      mandatory=True, editable=True,
+                                      mandatory=False, editable=True,
                                       default=default)
         self.none_value = []
 
@@ -107,7 +107,7 @@ class ListField(Field):
         old_value = saver.doc.get(self.key)
         if old_value is None:
             old_value=[]
-        if value not in [None, '']: 
+        if value not in [None, '']:
             if isinstance(value, list):
                 old_value.extend(value)
             elif value.startswith('[') and value.endswith(']'):
@@ -122,8 +122,8 @@ class ListField(Field):
             else:
                 old_value.append(value)
         return old_value
-    
-    
+
+
 
 class IdField(Field):
     "The identifier for the entity."
@@ -134,7 +134,7 @@ class IdField(Field):
         super(IdField, self).__init__(key, title=title,
                                       description=description,
                                       mandatory=True, editable=False)
-    
+
     def check_valid(self, saver, value):
         "Only allow a subset of ordinary ASCII characters."
         logging.debug('IdField.check_valid')
