@@ -109,7 +109,7 @@ class ListField(Field):
             old_value=[]
         if value not in [None, '']: 
             if isinstance(value, list):
-                old_value.extend(value)
+                old_value = value
             elif value.startswith('[') and value.endswith(']'):
                 old_value=[]
                 #assume it's a serialized list
@@ -120,7 +120,7 @@ class ListField(Field):
                     else:
                         old_value.append(val)
             else:
-                old_value.append(value)
+                old_value = [value]
         return old_value
     
     
