@@ -194,7 +194,6 @@ class ApiSeqrun(ApiRequestHandler):
                 self.send_error(409, reason=str(msg))
             else:
                 self.set_status(204)
-                self.update_sample_analysis_status(projectid,sampleid)
 
     def delete(self, projectid, sampleid, libprepid, seqrunid):
         """NOTE: This is for unit test purposes only!
@@ -206,31 +205,6 @@ class ApiSeqrun(ApiRequestHandler):
         logging.debug("deleted seqrun {0}, {1}, {2}",
                       projectid, sampleid, libprepid, seqrunid)
         self.set_status(204)
-                
-    def update_sample_analysis_status(self,projectid,sampleid):
-        """This will update the sample_amalysis_status according to the current state of the data"""
-        update=True
-        seqruns = self.get_seqruns(projectid, sampleid)
-        for seqrun in seqruns:
-            if seqrun.get('alignment_status') not in ['DONE', 'FAILED']:
-                update=False
-                break
-        doc= self.get_sample(projectid, sampleid)
-        if doc.get('total_autosomal_coverage')< doc.get('target_coverage'):
-            update=False
-
-        if update:
-            doc['analysis_status']='ANALYZED'
-            try:
-                with SampleSaver(doc=doc, rqh=self) as saver:
-                    saver.store(data=doc)#failing to provide data will end up in an empty record.
-            except ValueError, msg:
-                self.send_error(400, reason=str("failed to update sample "+msg))
-            except IOError, msg:
-                self.send_error(409, reason=str(msg))
-            else:
-                self.set_status(204)
-
 
 
     def update_sample_cov(self, projectid, sampleid):
@@ -247,7 +221,7 @@ class ApiSeqrun(ApiRequestHandler):
                         totalcov+=float(seqrun['mean_autosomal_coverage'])
                     if seqrun.get('total_reads'):
                         totalreads+=float(seqrun['total_reads'])
-            
+
             doc= self.get_sample(projectid, sampleid)
 
             doc['total_autosomal_coverage']=totalcov
@@ -301,34 +275,11 @@ class ApiSeqrunCreate(ApiRequestHandler):
                                        sampleid,
                                        libprepid,
                                        seqrun['seqrunid'])
-                self.update_sample_analysis_status(projectid, sampleid)
                 self.set_header('Location', url)
                 self.set_status(201)
                 self.add_seqrun_links(seqrun)
                 self.write(seqrun)
 
-    def update_sample_analysis_status(self,projectid,sampleid):
-        """This will update the sample_amalysis_status according to the current state of the data"""
-        update=True
-        seqruns = self.get_seqruns(projectid, sampleid)
-        for seqrun in seqruns:
-            if seqrun.get('alignment_status') not in ['DONE', 'FAILED']:
-                update=False
-                break
-        doc= self.get_sample(projectid, sampleid)
-        if doc.get('total_autosomal_coverage')< doc.get('target_coverage'):
-            update=False
-
-        if update:
-            doc['analysis_status']='ANALYZED'
-            try:
-                with SampleSaver(doc=doc, rqh=self) as saver:
-                    saver.store(data=doc)#failing to provide data will end up in an empty record.
-            except ValueError, msg:
-                self.send_error(400, reason=str("failed to update sample "+msg))
-            except IOError, msg:
-                self.send_error(409, reason=str(msg))
-                
     def update_sample_cov(self, projectid, sampleid):
         """this calculates the total of each mean autosomal coverage and updates sample leve.
         This should be done every time a seqrun is updated/created"""
