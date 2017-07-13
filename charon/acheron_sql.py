@@ -248,6 +248,29 @@ class CharonDocumentTracker:
 
             self.docs.append(doc)
 
+    def remove_duplicate_libs(self, libs):
+        samples_lists=[]
+        libs.sort(reverse=True, key=lambda x:x.daterun)
+        for lib in libs:
+            query = "select sa.* from sample sa inner join \
+            artifact_sample_map asm on sa.processid = asm.processid inner join \
+            processiotracker piot on asm.artifactid = piot.inputartifactid \
+            where piot.processid = {libid}".format(libid = lib.processid)
+            samples = self.session.query(Sample).from_statement(text(query)).all()
+            samples_lists.append(samples)
+        duplicate_libs_ids=set()
+        for i in xrange(0, len(libs)):
+            for j in xrange(i+1, len(libs)):
+                if set(samples_lists[i]) == set(samples_lists[j]):
+                    duplicate_libs_ids.add(j)
+
+        for idx in duplicate_libs_ids:
+            del libs[idx]
+
+        return libs
+
+
+
     def generate_libprep_seqrun_docs(self):
         curtime = datetime.now().isoformat()
         for sample in self.project.samples:
@@ -256,6 +279,7 @@ class CharonDocumentTracker:
             inner join artifact_sample_map asm on asm.artifactid=piot.inputartifactid \
             where asm.processid={pcid} and pc.typeid in (8,806);".format(pcid=sample.processid)
             libs = self.session.query(Process).from_statement(text(query)).all()
+            libs = self.remove_duplicate_libs(libs)
             alphaindex = 65
             for lib in libs:
                 doc = {}
@@ -345,7 +369,7 @@ class CharonDocumentTracker:
                             self.logger.error("project {0} failed to be updated : {1}".format(doc['projectid'], rq.text))
                     else:
                         pj = r.json()
-                        merged = merge(doc, pj)
+                        merged = merge(pj, doc)
                         if merged != pj:
                             rq = session.put(url, headers=headers, data=json.dumps(merged))
                             if rq.status_code == requests.codes.no_content:
