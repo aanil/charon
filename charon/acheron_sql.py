@@ -264,7 +264,7 @@ class CharonDocumentTracker:
                 if set(samples_lists[i]) == set(samples_lists[j]):
                     duplicate_libs_ids.add(j)
 
-        for idx in duplicate_libs_ids:
+        for idx in sorted(list(duplicate_libs_ids), reverse = True):
             del libs[idx]
 
         return libs
