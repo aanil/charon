@@ -250,7 +250,7 @@ class CharonDocumentTracker:
 
     def remove_duplicate_libs(self, libs):
         samples_lists=[]
-        libs.sort(reverse=True, key=lambda x:x.daterun)
+        libs.sort(reverse=True, key=lambda x:(x.daterun or datetime.now()))
         for lib in libs:
             query = "select sa.* from sample sa inner join \
             artifact_sample_map asm on sa.processid = asm.processid inner join \
