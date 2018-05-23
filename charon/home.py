@@ -34,6 +34,7 @@ def sampleStats(handler, projectid=None):
         coverage="TOTAL_COV"
 
     view = handler.db.view('sample/summary_count')
+    pview = handler.db.view('project/projectid')
     seqview = handler.db.view('sample/sequenced', group=True)
     try:
         data['tot'] = view[total].rows[0].value
@@ -68,7 +69,6 @@ def sampleStats(handler, projectid=None):
         else:
             for row in seqview:
                 seq+=1
-
         data['seq'] = seq
     except (KeyError, IndexError):
         data['seq']=0
@@ -77,9 +77,12 @@ def sampleStats(handler, projectid=None):
     except (KeyError, IndexError):
         data['cov']=0
     data['hge'] = int(data['cov'] / 30)
+    try:
+        data['gdp'] = handler.db.get(pview[projectid].rows[0].id)['delivery_projects']
+    except (KeyError, IndexError):
+        data['gdp'] = []
 
     return data
-
 
 class SummaryAPI(ApiRequestHandler):
     """Summarizes data for the whole DB, or one project"""
