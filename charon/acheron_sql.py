@@ -274,12 +274,12 @@ class CharonDocumentTracker:
     def generate_libprep_seqrun_docs(self):
         curtime = datetime.now().isoformat()
         for sample in self.project.samples:
-            query = "select pc.* from process pc \
-            inner join processiotracker piot on piot.processid=pc.processid \
-            inner join artifact_sample_map asm on asm.artifactid=piot.inputartifactid \
-            where asm.processid={pcid} and pc.typeid in (8,806);".format(pcid=sample.processid)
-            libs = self.session.query(Process).from_statement(text(query)).all()
-            libs = self.remove_duplicate_libs(libs)
+            query = "select art.* from artifact art \
+                    inner join processiotracker piot on piot.inputartifactid = art.artifactid \
+                    inner join artifact_sample_map asm on piot.inputartifactid = asm.artifactid \
+                    inner join process pc on piot.processid = pc.processid \
+                    where asm.processid = {pcid} and pc.typeid in (8,806);".format(pcid=sample.processid)
+            libs = self.session.query(Artifact).from_statement(text(query)).all()
             alphaindex = 65
             for lib in libs:
                 doc = {}
@@ -292,12 +292,9 @@ class CharonDocumentTracker:
                 doc['qc'] = "PASSED"
                 self.docs.append(doc)
                 query = "select distinct pro.* from process pro \
-                inner join processiotracker pio on pio.processid=pro.processid \
-                inner join artifact_sample_map asm on pio.inputartifactid=asm.artifactid \
-                inner join artifact_ancestor_map aam on pio.inputartifactid=aam.artifactid\
-                inner join processiotracker pio2 on pio2.inputartifactid=aam.ancestorartifactid\
-                inner join process pro2 on pro2.processid=pio2.processid \
-                where pro2.processid={parent} and pro.typeid in (38,46,714) and asm.processid={sid};".format(parent=lib.processid, sid=sample.processid)
+                        inner join processiotracker piot on piot.processid = pro.processid \
+                        inner join artifact_ancestor_map aam on piot.inputartifactid = aam.artifactid \
+                        where pro.typeid in (38,46,714,1454) and aam.ancestorartifactid = {lib_art}".format(lib_art=lib.artifactid)
                 seqs = self.session.query(Process).from_statement(text(query)).all()
                 for seq in seqs:
                     seqdoc = {}
@@ -458,7 +455,7 @@ if __name__ == "__main__":
     parser.add_argument("-z", "--test", dest="test", default=False, action="store_true",
                         help="Testing option")
     args = parser.parse_args()
-
+    
     if not args.token:
         print("No valid token found in arg or in environment. Exiting.")
     if not args.url:
