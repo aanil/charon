@@ -76,6 +76,7 @@ Project {{ project['projectid'] }}
 	<tr class="list">
 	  <th class="sort" data-sort="identifier">Identifier</th>
 	  <th class="sort" data-sort="status">Status</th>
+	  <th class="sort" data-sort="qc_status">QC Status</th>
 	  <th class="sort" data-sort="an_status">Analysis Status</th>
 	  <th class="sort" data-sort="ge_status">Genotyping status</th>
 	  <th class="sort" data-sort="de_status">Delivery Status</th>
@@ -93,6 +94,7 @@ Project {{ project['projectid'] }}
 	<tr class="list">
 	  <th class="sort" data-sort="identifier">Identifier</th>
 	  <th class="sort" data-sort="status">Status</th>
+	  <th class="sort" data-sort="qc_status">QC Status</th>
 	  <th class="sort" data-sort="an_status">Analysis Status</th>
 	  <th class="sort" data-sort="ge_status">Genotyping status</th>
 	  <th class="sort" data-sort="de_status">Delivery Status</th>
@@ -116,6 +118,7 @@ Project {{ project['projectid'] }}
 	    </a>
 	  </td>
 	  <td class="status">{{ sample.get('status') or '-' }}</td>
+	  <td class="qc_status">{{ sample.get('qc') or '-' }}</td>
 	  <td class="an_status">{{ sample.get('analysis_status') or '-' }}</td>
 	  <td class="ge_status">{{ sample.get('genotype_status') or '-' }}</td>
 	  <td class="de_status">{{ sample.get('delivery_status') or '-' }}</td>
