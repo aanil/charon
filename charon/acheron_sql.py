@@ -233,9 +233,12 @@ class CharonDocumentTracker:
             doc['status'] = 'FRESH'
             doc['analysis_status'] = 'TO_ANALYZE'
 
+            # doc will not be updated if there is a connection error. Script will continue with the next sample
             remote_sample=self.get_charon_sample(sample.name)
             if remote_sample and remote_sample.get('status') == 'STALE' and self.seqruns_for_sample(sample.name) == self.remote_seqruns_for_sample(sample.name):
                 doc['status'] = 'STALE'
+            elif remote_sample is None:
+                continue
 
             for udf in sample.udfs:
                 if udf.udfname == 'Status (manual)':
@@ -455,7 +458,7 @@ if __name__ == "__main__":
     parser.add_argument("-z", "--test", dest="test", default=False, action="store_true",
                         help="Testing option")
     args = parser.parse_args()
-    
+
     if not args.token:
         print("No valid token found in arg or in environment. Exiting.")
     if not args.url:
