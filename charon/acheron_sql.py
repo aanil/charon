@@ -345,7 +345,7 @@ class CharonDocumentTracker:
         elif r.status_code == requests.codes.not_found:
             return None
         else:
-            raise Exception('An unknown connection error occurred while getting the seqrun from Charon')
+            raise Exception('A connection error "{}" occurred while getting the seqrun from Charon'.format(r.status_code))
 
     def get_charon_sample(self, sampleid):
         session = requests.Session()
@@ -357,7 +357,7 @@ class CharonDocumentTracker:
         elif r.status_code == requests.codes.not_found:
             return None
         else:
-            raise Exception('An unknown connection error occurred while getting the sample from Charon')
+            raise Exception('A connection error "{}" occurred while getting the sample from Charon'.format(r.status_code))
 
     def update_charon(self):
         session = requests.Session()
