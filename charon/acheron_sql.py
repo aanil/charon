@@ -1,4 +1,3 @@
-
 import argparse
 import copy
 import json
@@ -234,10 +233,14 @@ class CharonDocumentTracker:
             doc['analysis_status'] = 'TO_ANALYZE'
 
             # doc will not be updated if there is a connection error. Script will continue with the next sample
-            remote_sample=self.get_charon_sample(sample.name)
-            if remote_sample and remote_sample.get('status') == 'STALE' and self.seqruns_for_sample(sample.name) == self.remote_seqruns_for_sample(sample.name):
-                doc['status'] = 'STALE'
-            elif remote_sample is None:
+            try:
+                remote_sample = self.get_charon_sample(sample.name)
+                seqruns_lims = self.seqruns_for_sample(sample.name)
+                seqruns_charon = self.remote_seqruns_for_sample(sample.name)
+                if remote_sample and remote_sample.get('status') == 'STALE' and seqruns_lims == seqruns_charon:
+                    doc['status'] = 'STALE'
+            except Exception as e:
+                self.logger.error("An error occurred while updating {}: {}. Skipping it.".format(sample.name, e))
                 continue
 
             for udf in sample.udfs:
@@ -338,8 +341,11 @@ class CharonDocumentTracker:
         if r.status_code == requests.codes.ok:
             for sr in r.json()['seqruns']:
                 seqruns.add(sr['seqrunid'])
-
-        return seqruns
+            return seqruns
+        elif r.status_code == requests.codes.not_found:
+            return None
+        else:
+            raise Exception('A connection error "{}" occurred while getting the seqrun from Charon'.format(r.status_code))
 
     def get_charon_sample(self, sampleid):
         session = requests.Session()
@@ -348,8 +354,10 @@ class CharonDocumentTracker:
         r = session.get(url, headers=headers)
         if r.status_code == requests.codes.ok:
             return r.json()
-        else:
+        elif r.status_code == requests.codes.not_found:
             return None
+        else:
+            raise Exception('A connection error "{}" occurred while getting the sample from Charon'.format(r.status_code))
 
     def update_charon(self):
         session = requests.Session()
