@@ -38,7 +38,7 @@ if __name__ == '__main__':
     (options, args) = parser.parse_args()
 
     if not options.force:
-        response = raw_input('about to delete everything; really sure? [n] > ')
+        response = input('about to delete everything; really sure? [n] > ')
         if not utils.to_bool(response):
             sys.exit('aborted')
     if len(args) == 0:
@@ -51,18 +51,18 @@ if __name__ == '__main__':
 
     db = utils.get_db()
     wipeout_database(db)
-    print 'wiped out database'
+    print('wiped out database')
     load_designs(db)
-    print 'loaded designs'
+    print('loaded designs')
     default = 'dump.tar.gz'
     if options.force:
         filename = default
     else:
-        filename = raw_input("load data from file? [{0}] > ".format(default))
+        filename = input("load data from file? [{0}] > ".format(default))
         if not filename:
             filename = default
     if os.path.exists(filename):
         count_items, count_files = undump(db, filename)
-        print 'undumped', count_items, 'items and', count_files, 'files from', filename
+        print('undumped', count_items, 'items and', count_files, 'files from', filename)
     else:
-        print 'no such file to undump'
+        print('no such file to undump')

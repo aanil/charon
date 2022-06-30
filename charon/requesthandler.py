@@ -1,8 +1,9 @@
 " Charon: RequestHandler subclass."
 
 import logging
-import urllib
+import urllib.parse
 import weakref
+import functools
 
 import tornado.web
 import couchdb
@@ -43,7 +44,7 @@ class RequestHandler(tornado.web.RequestHandler):
             path = self.reverse_url(name, *args)
         url = settings['BASE_URL'].rstrip('/') + path
         if kwargs:
-            url += '?' + urllib.urlencode(kwargs)
+            url += '?' + urllib.parse.urlencode(kwargs)
         return url
 
     def get_current_user(self):
@@ -55,6 +56,7 @@ class RequestHandler(tornado.web.RequestHandler):
             email = self.get_secure_cookie(constants.USER_COOKIE_NAME)
             if email:
                 try:
+                    email = email.decode('utf-8')
                     user = self.get_user(email)
                 except tornado.web.HTTPError:
                     return None
@@ -102,7 +104,7 @@ class RequestHandler(tornado.web.RequestHandler):
                 return self.get_and_cache('project/name',
                                       projectid,
                                       self._projects)
-            
+
     def get_not_done_projects(self):
         "Get projects that are not done."
         all = [r.value for r in
@@ -282,7 +284,7 @@ class RequestHandler(tornado.web.RequestHandler):
         "Return the log documents for the given doc id."
         view = self.db.view('log/doc', include_docs=True)
         return sorted([r.doc for r in view[id]],
-                      cmp=utils.cmp_timestamp,
+                      key=functools.cmp_to_key(utils.cmp_timestamp),
                       reverse=True)
 
     def send_error(self, status_code=500, **kwargs):
@@ -319,4 +321,3 @@ class RequestHandler(tornado.web.RequestHandler):
             app_log.error("Uncaught exception in write_error", exc_info=True)
         if not self._finished:
             self.finish()
-

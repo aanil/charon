@@ -23,7 +23,7 @@ class ApiRequestHandler(RequestHandler):
         super(ApiRequestHandler, self).prepare()
         self.check_api_access()
 
-    
+
     def check_api_access(self):
         """Check the API token given in the header.
         Return HTTP 401 if invalid or missing key."""
@@ -143,7 +143,7 @@ class ApiNotify(ApiRequestHandler):
             href = data.get('href', '')
             if not href.startswith(settings['AUTH']['HREF']):
                 raise ValueError("wrong Userman host: %s", href)
-        except Exception, msg:
+        except Exception as msg:
             logging.warning("API notify post error: %s", msg)
             self.send_error(400, reason=str(msg))
         else:
@@ -162,5 +162,5 @@ class ApiNotify(ApiRequestHandler):
                 user.update(data)
                 with UserSaver(doc=user, rqh=self):
                     pass            # Changes already made.
-            except Exception, msg:
+            except Exception as msg:
                 logging.debug("API notify request error: %s", msg)

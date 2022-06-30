@@ -13,7 +13,7 @@ class Icon(tornado.web.UIModule):
     def render(self, name, title=None, label=False):
         if not name:
             name = 'unknown'
-        elif not isinstance(name, basestring):
+        elif not isinstance(name, str):
             name = name[constants.DB_DOCTYPE]
         Name = name.capitalize()
         value = self.template.format(url=self.handler.static_url(name + '.png'),
@@ -59,7 +59,7 @@ class Submit(tornado.web.UIModule):
         if slim:
             params['class'] = 'slim'
         result = "<button {0}>".format(' '.join(['{0}="{1}"'.format(k,v)
-                                                 for k,v in params.items()]))
+                                                 for k,v in list(params.items())]))
         Name = name.capitalize()
         result += """<img src="{url}" alt="{name}" title="{name}">""".format(
             url=self.handler.static_url(name + '.png'),

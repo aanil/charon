@@ -2,6 +2,7 @@
 
 import logging
 import json
+import functools
 
 import tornado.web
 import couchdb
@@ -89,7 +90,7 @@ class SummaryAPI(ApiRequestHandler):
     def get(self):
         """returns stats from the DB as JSON data  """
         project_id=self.get_argument("projectid", default=None)
-        self.write(json.dumps(sampleStats(self, project_id)))    
+        self.write(json.dumps(sampleStats(self, project_id)))
 
 
 class Summary(RequestHandler):
@@ -164,8 +165,8 @@ class Search(RequestHandler):
             for row in view[term : term+constants.HIGH_CHAR]:
                 doc = self.get_user(row.value)
                 items[doc['_id']] = doc
-        items = sorted(items.values(),
-                       cmp=lambda i,j: cmp(i['modified'], j['modified']),
+        items = sorted(list(items.values()),
+                       key=functools.cmp_to_key(lambda i,j: utils.cmp(i['modified'], j['modified'])),
                        reverse=True)
         self.render('search.html',
                     term=term,

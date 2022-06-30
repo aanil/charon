@@ -92,7 +92,7 @@ class LibprepCreate(RequestHandler):
             with self.saver(rqh=self, sample=sample) as saver:
                 saver.store()
                 libprep = saver.doc
-        except (IOError, ValueError), msg:
+        except (IOError, ValueError) as msg:
             self.render('libprep_create.html',
                         project=self.get_project(projectid),
                         sample=sample,
@@ -125,7 +125,7 @@ class LibprepEdit(RequestHandler):
         try:
             with self.saver(doc=libprep, rqh=self) as saver:
                 saver.store()
-        except (IOError, ValueError), msg:
+        except (IOError, ValueError) as msg:
             self.render('libprep_edit.html',
                         libprep=libprep,
                         fields=self.saver.fields,
@@ -156,15 +156,15 @@ class ApiLibprep(ApiRequestHandler):
         try:
             libprep = self.get_libprep(projectid, sampleid, libprepid)
             data = json.loads(self.request.body)
-        except Exception, msg:
+        except Exception as msg:
             self.send_error(400, reason=str(msg))
         else:
             try:
                 with self.saver(doc=libprep, rqh=self) as saver:
                     saver.store(data=data)
-            except ValueError, msg:
+            except ValueError as msg:
                 self.send_error(400, reason=str(msg))
-            except IOError, msg:
+            except IOError as msg:
                 self.send_error(409, reason=str(msg))
             else:
                 self.set_status(204)
@@ -197,16 +197,16 @@ class ApiLibprepCreate(ApiRequestHandler):
         if not sample: return
         try:
             data = json.loads(self.request.body)
-        except Exception, msg:
+        except Exception as msg:
             self.send_error(400, reason=str(msg))
         else:
             try:
                 with self.saver(rqh=self, sample=sample) as saver:
                     saver.store(data=data)
                     libprep = saver.doc
-            except (KeyError, ValueError), msg:
+            except (KeyError, ValueError) as msg:
                 self.send_error(400, reason=str(msg))
-            except IOError, msg:
+            except IOError as msg:
                 self.send_error(409, reason=str(msg))
             else:
                 url = self.reverse_url('api_libprep',
