@@ -3,7 +3,7 @@ import copy
 import json
 import logging
 import multiprocessing as mp
-import Queue
+import queue
 import requests
 import time
 import re
@@ -36,7 +36,7 @@ def main(args):
         main_log.info("Project list : {0}".format(", ".join([x.luid for x in project_list])))
         masterProcess(args, project_list, main_log)
     elif args.test:
-        print "\n".join(x.__str__() for x in obtain_recent_projects(db_session))
+        print("\n".join(x.__str__() for x in obtain_recent_projects(db_session)))
 
 
 def setup_logging(name, args):
@@ -112,7 +112,7 @@ def masterProcess(args, projectList, logger):
         try:
             log = logQueue.get(False)
             logger.handle(log)
-        except Queue.Empty:
+        except queue.Empty:
             if not stillRunning(childs):
                 notDone = False
                 break
@@ -146,7 +146,7 @@ def processCharon(args, queue, logqueue):
         # grabs project from queue
         try:
             proj_id = queue.get(block=True, timeout=3)
-        except Queue.Empty:
+        except queue.Empty:
             work = False
             break
         except NotImplementedError:
@@ -265,8 +265,8 @@ class CharonDocumentTracker:
             samples = self.session.query(Sample).from_statement(text(query)).all()
             samples_lists.append(samples)
         duplicate_libs_ids=set()
-        for i in xrange(0, len(libs)):
-            for j in xrange(i+1, len(libs)):
+        for i in range(0, len(libs)):
+            for j in range(i+1, len(libs)):
                 if set(samples_lists[i]) == set(samples_lists[j]):
                     duplicate_libs_ids.add(j)
 

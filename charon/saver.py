@@ -22,7 +22,7 @@ class Field(object):
         self.mandatory = mandatory             # A non-None value is requried.
         self.editable = editable               # Changeable once set?
         self.default=default
-        self.none_value=u'None'
+        self.none_value='None'
 
     def store(self, saver, data=None, check_only=False):
         """Check, convert and store the field value.
@@ -34,7 +34,7 @@ class Field(object):
         value = self.get(saver, data=data)
         try:
             value = self.process(saver, value)
-        except ValueError, msg:
+        except ValueError as msg:
             raise ValueError("field '{0}': {1}".format(self.key, msg))
         if check_only: return
         if self.default is not None and value is None:
@@ -145,7 +145,7 @@ class IdField(Field):
 class SelectField(Field):
     "Select one of a set of values."
 
-    none_value = u'None'
+    none_value = 'None'
 
     def __init__(self, key, title=None, description=None,
                  mandatory=False, editable=True, options=[]):

@@ -2,7 +2,7 @@
 
 import json
 import tarfile
-from cStringIO import StringIO
+from io import StringIO
 
 from charon import utils
 from charon import constants
@@ -64,7 +64,7 @@ def undump(db, filename):
             atts = doc.pop('_attachments', dict())
             db.save(doc)
             count_items += 1
-            for attname, attinfo in atts.items():
+            for attname, attinfo in list(atts.items()):
                 key = "{0}_att/{1}".format(doc['_id'], attname)
                 attachments[key] = dict(filename=attname,
                                         content_type=attinfo['content_type'])
@@ -84,4 +84,4 @@ if __name__ == '__main__':
     else:
         filename = 'dump.tar.gz'
     count_items, count_files = dump(db, filename)
-    print 'dumped', count_items, 'items and', count_files, 'files to', filename
+    print('dumped', count_items, 'items and', count_files, 'files to', filename)

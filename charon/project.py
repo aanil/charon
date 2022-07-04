@@ -3,7 +3,7 @@
 import logging
 import json
 import csv
-import cStringIO
+import io
 
 import tornado.web
 import couchdb
@@ -48,9 +48,9 @@ class ProjectSaver(sav.Saver):
     fields = [ProjectidField('projectid', title='Identifier'),
               ProjectnameField('name'),
               sav.SelectField('status', description='The status of the project.',
-                          options=cst.PROJECT_STATUS.values()),
+                          options=list(cst.PROJECT_STATUS.values())),
               sav.SelectField('delivery_status', description='The delivery status of the project.',
-                          options=cst.DELIVERY_STATUS.values()),
+                          options=list(cst.DELIVERY_STATUS.values())),
               sav.Field('delivery_token',
                     description='Delivery token from mover'),
               sav.ListField('delivery_projects', title='Delivery projects',
@@ -79,7 +79,7 @@ class UploadSamplesMixin(object):
     def upload_samples(self, project):
         "Upload samples from file provided via HTML form field."
         samples = []
-        try: 
+        try:
             data = self.request.files['csvfile'][0]
         except (KeyError, IndexError):
             raise tornado.web.HTTPError(400, reason='no CSV file uploaded')
@@ -96,7 +96,7 @@ class UploadSamplesMixin(object):
                                    format(sampleid))
             else:
                 samples_set.add(sampleid)
-        reader = csv.reader(cStringIO.StringIO(data['body']))
+        reader = csv.reader(io.StringIO(data['body']))
         # First get all new sampleids, and check uniqueness
         for pos, record in enumerate(reader):
             try:
@@ -124,7 +124,7 @@ class UploadSamplesMixin(object):
                     with SampleSaver(rqh=self, project=project) as saver:
                         data = dict(sampleid=sampleid)
                         saver.store(data=data)
-                except (IOError, ValueError), msg:
+                except (IOError, ValueError) as msg:
                     self.errors.append("line {0}: {1}".format(pos+1, str(msg)))
             self.messages.append("{0} samples added".format(len(samples)))
 
@@ -138,15 +138,15 @@ class UpdateSamplesMixin(object):
 
     def update_samples(self, project):
         "Update samples from a file provided via HTML form field."
-        try: 
+        try:
             data = self.request.files['csvfile'][0]
         except (KeyError, IndexError):
             raise tornado.web.HTTPError(400, reason='no CSV file uploaded')
         self.messages = ["Data from file {0}".format(data['filename'])]
         self.errors = []
-        reader = csv.reader(cStringIO.StringIO(data['body']))
+        reader = csv.reader(io.StringIO(data['body']))
         # Header: get positions of fields
-        header = reader.next()
+        header = next(reader)
         lookup = dict()
         for field in SampleSaver.fields:
             try:
@@ -173,7 +173,7 @@ class UpdateSamplesMixin(object):
                     continue
                 # Collect update data for sample
                 data = dict()
-                for key, slot in lookup.iteritems():
+                for key, slot in lookup.items():
                     if key == 'sampleid': continue
                     value = row[slot].strip()
                     if not value: continue
@@ -182,7 +182,7 @@ class UpdateSamplesMixin(object):
                 try:
                     with SampleSaver(rqh=self, doc=sample) as saver:
                         saver.store(data=data, check_only=True)
-                except ValueError, msg:
+                except ValueError as msg:
                     self.errors.append("row {0}; {1}".format(pos+1, str(msg)))
         if self.errors:
             self.messages.append('No samples added.')
@@ -193,12 +193,12 @@ class UpdateSamplesMixin(object):
                 sample = self.get_sample(project['projectid'], sampleid)
                 # Collect update data for sample
                 data = dict()
-                for key, slot in lookup.iteritems():
+                for key, slot in lookup.items():
                     if key == 'sampleid': continue
                     value = row[slot].strip()
                     if not value: continue
                     data[key] = value
-                # Store it 
+                # Store it
                 with SampleSaver(rqh=self, doc=sample) as saver:
                     saver.store(data=data)
             self.messages.append("{0} samples updated.".format(len(rows)))
@@ -260,7 +260,7 @@ class ProjectCreate(RequestHandler):
             with self.saver(rqh=self) as saver:
                 saver.store()
                 project = saver.doc
-        except (IOError, ValueError), msg:
+        except (IOError, ValueError) as msg:
             self.render('project_create.html',
                         fields=self.saver.fields,
                         error=str(msg))
@@ -290,7 +290,7 @@ class ProjectEdit(RequestHandler):
         try:
             with self.saver(doc=project, rqh=self) as saver:
                 saver.store()
-        except (IOError, ValueError), msg:
+        except (IOError, ValueError) as msg:
             self.render('project_edit.html',
                         fields=self.saver.fields,
                         project=project,
@@ -351,7 +351,7 @@ class ProjectUpdate(UpdateSamplesMixin, RequestHandler):
                                     error='\n'.join(self.errors))
         self.redirect(url)
 
-    
+
 
 class Projects(RequestHandler):
     "List all projects."
@@ -377,7 +377,7 @@ class ApiProject(UploadSamplesMixin, ApiRequestHandler):
         self.write(project)
 
     # Do not use authentication decorator; do not send to login page, but fail.
-    def post(self, projectid): 
+    def post(self, projectid):
         "Upload a CSV file containing identifiers of samples to create."
         project = self.get_project(projectid)
         self.upload_samples(project)
@@ -386,7 +386,7 @@ class ApiProject(UploadSamplesMixin, ApiRequestHandler):
             self.set_status(400)
 
     # Do not use authentication decorator; do not send to login page, but fail.
-    def put(self, projectid): 
+    def put(self, projectid):
         """Update the project with the given JSON data.
         Return HTTP 204 "No Content" when successful.
         Return HTTP 400 if the input data is invalid.
@@ -396,17 +396,17 @@ class ApiProject(UploadSamplesMixin, ApiRequestHandler):
         if not project: return
         try:
             data = json.loads(self.request.body)
-        except Exception, msg:
+        except Exception as msg:
             logging.debug("Exception: %s", msg)
             self.send_error(400, reason=str(msg))
         else:
             try:
                 with self.saver(doc=project, rqh=self) as saver:
                     saver.store(data=data)
-            except ValueError, msg:
+            except ValueError as msg:
                 logging.debug("ValueError: %s", msg)
                 self.send_error(400, reason=str(msg))
-            except IOError, msg:
+            except IOError as msg:
                 logging.debug("IOError: %s", msg)
                 self.send_error(409, reason=str(msg))
             else:
@@ -430,7 +430,7 @@ class ApiProjectSamplesUpdate(UpdateSamplesMixin, ApiRequestHandler):
     saver = ProjectSaver
 
     # Do not use authentication decorator; do not send to login page, but fail.
-    def post(self, projectid): 
+    def post(self, projectid):
         "Upload a CSV file containing identifiers of samples to create."
         project = self.get_project(projectid)
         self.update_samples(project)
@@ -452,16 +452,16 @@ class ApiProjectCreate(ApiRequestHandler):
         Return HTTP 409 if there is a document revision conflict."""
         try:
             data = json.loads(self.request.body)
-        except Exception, msg:
+        except Exception as msg:
             self.send_error(400, reason=str(msg))
         else:
             try:
                 with self.saver(rqh=self) as saver:
                     saver.store(data=data)
                     project = saver.doc
-            except (KeyError, ValueError), msg:
+            except (KeyError, ValueError) as msg:
                 self.send_error(400, reason=str(msg))
-            except IOError, msg:
+            except IOError as msg:
                 self.send_error(409, reason=str(msg))
             else:
                 projectid = project['projectid']
