@@ -3,7 +3,7 @@ import copy
 import json
 import logging
 import multiprocessing as mp
-import queue
+import queue as Queue
 import requests
 import time
 import re
@@ -112,7 +112,7 @@ def masterProcess(args, projectList, logger):
         try:
             log = logQueue.get(False)
             logger.handle(log)
-        except queue.Empty:
+        except Queue.Empty:
             if not stillRunning(childs):
                 notDone = False
                 break
@@ -146,7 +146,7 @@ def processCharon(args, queue, logqueue):
         # grabs project from queue
         try:
             proj_id = queue.get(block=True, timeout=3)
-        except queue.Empty:
+        except Queue.Empty:
             work = False
             break
         except NotImplementedError:
