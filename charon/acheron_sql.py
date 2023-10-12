@@ -300,7 +300,7 @@ class CharonDocumentTracker:
                 query = "select distinct pro.* from process pro \
                         inner join processiotracker piot on piot.processid = pro.processid \
                         inner join artifact_ancestor_map aam on piot.inputartifactid = aam.artifactid \
-                        where pro.typeid in (38,46,714,1454,1908) and aam.ancestorartifactid = {lib_art}".format(lib_art=lib.artifactid)
+                        where pro.typeid in (38,46,714,1454,1908,2612) and aam.ancestorartifactid = {lib_art}".format(lib_art=lib.artifactid)
                 seqs = self.session.query(Process).from_statement(text(query)).all()
                 for seq in seqs:
                     seqdoc = {}
