@@ -2,7 +2,7 @@
 
 import logging
 import json
-import urllib
+import urllib.parse
 
 import tornado.web
 import couchdb
@@ -37,7 +37,7 @@ class Login(RequestHandler):
             if not url:
                 url = self.reverse_url('home')
             self.redirect(url)
-        except (tornado.web.MissingArgumentError, ValueError), msg:
+        except (tornado.web.MissingArgumentError, ValueError) as msg:
             logging.debug("login error: %s", msg)
             self.render('login.html',
                         error=str(msg),
@@ -54,7 +54,7 @@ class Login(RequestHandler):
         if not password:
             raise ValueError('no password given')
         url = "{0}/{1}".format(settings['AUTH']['AUTH_HREF'],
-                               urllib.quote(email))
+                               urllib.parse.quote(email))
         data = json.dumps(dict(password=password, service='Charon'))
         headers = {'X-Userman-API-token': settings['AUTH']['API_TOKEN']}
         response = requests.post(url, data=data, headers=headers)

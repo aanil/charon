@@ -2,7 +2,7 @@
 
 import logging
 import csv
-import cStringIO
+import io
 
 import tornado.web
 import couchdb
@@ -38,7 +38,7 @@ class UploadRequestHandler(RequestHandler):
             raise tornado.web.HTTPError(400, reason='no CSV file uploaded')
         self.errors = []
         self.messages = ["Data from file {}".format(data['filename'])]
-        infile = cStringIO.StringIO(data['body'])
+        infile = io.StringIO(data['body'])
         logging.debug(data['body'])
         dialect = csv.Sniffer().sniff(infile.read(1024))
         infile.seek(0)
@@ -66,7 +66,7 @@ class UploadRequestHandler(RequestHandler):
     def get_header_line(self, reader):
         "Return the header line, if there is supposed to be one."
         if utils.to_bool(self.get_argument('header_line',False)):
-            return reader.next()
+            return next(reader)
         else:
             return None
 
@@ -143,7 +143,7 @@ class UploadSamplesheetUppsala(UploadRequestHandler):
 
     def get_header_line(self, reader):
         "There is always a header line in a samplesheet file."
-        return reader.next()
+        return next(reader)
 
     def get_new_project(self, pos, row):
         "Check and return the identifier for a new project. None if error."
@@ -202,9 +202,9 @@ class UploadProjects(UploadRequestHandler):
                             saver.store(data=data)
                             sample = saver.doc
                     self.messages.append('Added projects and samples')
-                except Exception, msg: # Rollback
+                except Exception as msg: # Rollback
                     self.errors.append("Unexpected error: {}".format(msg))
-                    for project in new_projects.values():
+                    for project in list(new_projects.values()):
                         utils.delete_project(self.db, project)
             else:
                 for projectid in sorted(self.projects):
@@ -250,7 +250,7 @@ class UploadSamples(UploadRequestHandler):
                             sample = saver.doc
                         new_samples.append(sample)
                     self.messages.append('Added samples')
-                except Exception, msg: # Rollback
+                except Exception as msg: # Rollback
                     self.errors.append("Unexpected error: {}".format(msg))
                     for sample in new_samples:
                         utils.delete_sample(self.db, sample)

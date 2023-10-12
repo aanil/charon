@@ -3,7 +3,7 @@
 import os
 import socket
 import logging
-import urlparse
+import urllib.parse
 import uuid
 import datetime
 import unicodedata
@@ -80,7 +80,7 @@ def load_settings(filepath=None):
     # Settings computable from others
     settings['DB_SERVER_VERSION'] = couchdb.Server(settings['DB_SERVER']).version()
     if 'PORT' not in settings:
-        parts = urlparse.urlparse(settings['BASE_URL'])
+        parts = urllib.parse.urlparse(settings['BASE_URL'])
         items = parts.netloc.split(':')
         if len(items) == 2:
             settings['PORT'] = int(items[1])
@@ -122,8 +122,8 @@ def timestamp(days=None):
 
 def to_ascii(value):
     "Convert any non-ASCII character to its closest equivalent."
-    if not isinstance(value, unicode):
-        value = unicode(value, 'utf-8')
+    if not isinstance(value, str):
+        value = str(value, 'utf-8')
     return unicodedata.normalize('NFKD', value).encode('ascii', 'ignore')
 
 def to_bool(value):
@@ -151,6 +151,18 @@ def log(db, doc, changed={}, current_user=None):
 def cmp_timestamp(i, j):
     "Compare the two documents by their 'timestamp' values."
     return cmp(i['timestamp'], j['timestamp'])
+
+def cmp(x, y):
+    """
+    From the Python porting guide
+    Replacement for built-in function cmp that was removed in Python 3
+
+    Compare the two objects x and y and return an integer according to
+    the outcome. The return value is negative if x < y, zero if x == y
+    and strictly positive if x > y.
+    """
+
+    return (x > y) - (x < y)
 
 def delete_project(db, project):
     "Delete the project and all its dependent entities."

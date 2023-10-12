@@ -21,4 +21,4 @@ if __name__ == '__main__':
         if 'sampleid' not in doc:
             db.delete(doc)
             count += 1
-    print total, count
+    print(total, count)

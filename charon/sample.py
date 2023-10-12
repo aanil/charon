@@ -33,33 +33,33 @@ class SampleSaver(sav.Saver):
     fields = [SampleidField('sampleid', title='Identifier'),
               sav.SelectField('analysis_status',
                           description='The status of the sample\'s analysis .',
-                          options=cst.SAMPLE_ANALYSIS_STATUS.values()),
+                          options=list(cst.SAMPLE_ANALYSIS_STATUS.values())),
               sav.SelectField('delivery_status', title='Delivery status',
-                    description='The delivery status of the sample.', options=cst.DELIVERY_STATUS.values()),
+                    description='The delivery status of the sample.', options=list(cst.DELIVERY_STATUS.values())),
               sav.Field('delivery_token', title='Delivery token',
                     description='The delivery token from mover.', default="NO-TOKEN"),
               sav.ListField('delivery_projects', title='Delivery projects',
                     description='The delivery projects that this sample was delivered to.', default=[]),
               sav.SelectField('status', title='status',
-                    description='The internal status of the sample.', options=cst.SEQUENCING_STATUS.values()),
+                    description='The internal status of the sample.', options=list(cst.SEQUENCING_STATUS.values())),
               sav.SelectField('qc', title='QC',
-                    description='The quality control status of the sample\'s analysis.', options=cst.SEQRUN_ANALYSIS_STATUS.values()),
+                    description='The quality control status of the sample\'s analysis.', options=list(cst.SEQRUN_ANALYSIS_STATUS.values())),
               sav.SelectField('genotype_status',
-                    description='The genotyping status of the sample.', options=cst.GENO_STATUS.values()),
+                    description='The genotyping status of the sample.', options=list(cst.GENO_STATUS.values())),
               sav.FloatField('genotype_concordance',
                     description='The value of the genotyping concordance of the sample.', default=0.0),
               sav.FloatField('total_autosomal_coverage',
-                    description='Coverage calculated in the last analysis steps.', 
+                    description='Coverage calculated in the last analysis steps.',
                     default=0.0),
               sav.FloatField('target_coverage',
-                    description='Target coverage for the current sample.', 
+                    description='Target coverage for the current sample.',
                     default=30.0),
               sav.FloatField('total_sequenced_reads',
                     description='Total of all for each seqrun in each libprep.'),
               sav.FloatField('requested_reads',
                     description='Number of Million of reads requested by the user.'),
               sav.FloatField('duplication_pc',
-                    description='Picard\'s duplication rate percentage taken from the .metrics file.', 
+                    description='Picard\'s duplication rate percentage taken from the .metrics file.',
                     default=0.0),
               sav.SelectField('type', description='Identifies cancer samples.', options=cst.SAMPLE_TYPES),
               sav.Field('pair', description='Identifies related samples.')
@@ -127,7 +127,7 @@ class SampleCreate(RequestHandler):
             with self.saver(rqh=self, project=project) as saver:
                 saver.store()
                 sample = saver.doc
-        except (IOError, ValueError), msg:
+        except (IOError, ValueError) as msg:
             self.render('sample_create.html',
                         project=project,
                         fields=self.saver.fields,
@@ -156,7 +156,7 @@ class SampleEdit(RequestHandler):
         try:
             with self.saver(doc=sample, rqh=self) as saver:
                 saver.store()
-        except (IOError, ValueError), msg:
+        except (IOError, ValueError) as msg:
             self.render('sample_edit.html',
                         sample=sample,
                         fields=self.saver.fields,
@@ -189,19 +189,19 @@ class ApiSample(ApiRequestHandler):
         sample = self.get_sample(projectid, sampleid)
         try:
             data = json.loads(self.request.body)
-        except Exception, msg:
+        except Exception as msg:
             self.send_error(400, reason=str(msg))
         else:
             try:
                 with self.saver(doc=sample, rqh=self) as saver:
                     saver.store(data=data)
-            except ValueError, msg:
+            except ValueError as msg:
                 self.send_error(400, reason=str(msg))
-            except IOError, msg:
+            except IOError as msg:
                 self.send_error(409, reason=str(msg))
             else:
                 self.set_status(204)
-    
+
     # Do not use authenticaton decorator; do not send to login page, but fail.
     def delete(self, projectid, sampleid):
         """NOTE: This is for unit test purposes only!
@@ -230,16 +230,16 @@ class ApiSampleCreate(ApiRequestHandler):
         if not project: return
         try:
             data = json.loads(self.request.body)
-        except Exception, msg:
+        except Exception as msg:
             self.send_error(400, reason=str(msg))
         else:
             try:
                 with self.saver(rqh=self, project=project) as saver:
                     saver.store(data=data)
                     sample = saver.doc
-            except (KeyError, ValueError), msg:
+            except (KeyError, ValueError) as msg:
                 self.send_error(400, reason=str(msg))
-            except IOError, msg:
+            except IOError as msg:
                 self.send_error(409, reason=str(msg))
             else:
                 url = self.reverse_url('api_sample',
@@ -376,7 +376,7 @@ class ApiSamplesCustomQuery(ApiRequestHandler):
             allsamples= self.get_samples(data['projectid'])
             samples=[]
             query="sample.get('{0}') {1} {2}('{3}')".format(data['sampleField'], data['operator'], data['type'], data['value'])
-        except Exception, msg:
+        except Exception as msg:
             self.send_error(400, reason=str(msg))
 
         for sample in allsamples:
@@ -386,13 +386,10 @@ class ApiSamplesCustomQuery(ApiRequestHandler):
                     continue
                 if type(sample.get(data['sampleField'])).__name__ != data['type']:
                     raise TypeError('Given type does not match database type {0}'.format(type(sample.get(data['sampleField'])).__name__))
-                if eval(query, {"__builtins__":None}, {'sample':sample, 'int':int, 'str':str, 'float':float, 'unicode':unicode, 'text':unicode} ):
+                if eval(query, {"__builtins__":None}, {'sample':sample, 'int':int, 'str':str, 'float':float, 'unicode':str, 'text':str} ):
                     samples.append(sample)
-            except Exception, msg:
+            except Exception as msg:
                 self.send_error(400, reason=str(msg))
         for sample in samples:
             self.add_sample_links(sample)
         self.write(dict(samples=samples))
-
-
-

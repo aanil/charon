@@ -10,13 +10,13 @@ import couchdb
 def do_create(db, total=400):
     timer = Timer()
     count = 0
-    for i in xrange(total):
+    for i in range(total):
         doc = dict(id=uuid.uuid4().hex,
                    number=i,
                    doctype='garbage')
         db.save(doc)
         count += 1
-    print 'create', count, timer
+    print('create', count, timer)
 
 def do_read(db):
     timer = Timer()
@@ -25,7 +25,7 @@ def do_read(db):
         doc = db[key]
         # print doc.id
         count += 1
-    print 'read', count, timer
+    print('read', count, timer)
 
 def do_delete(db):
     timer = Timer()
@@ -38,7 +38,7 @@ def do_delete(db):
                 count += 1
         except KeyError:
             pass
-    print 'delete', count, timer
+    print('delete', count, timer)
 
 
 class Timer(object):
@@ -64,7 +64,7 @@ if __name__ == '__main__':
     COUCHDB_SERVER = sys.argv[1]
     COUCHDB_DATABASE = 'charon'
     server = couchdb.Server(COUCHDB_SERVER)
-    print server.version()
+    print(server.version())
     db = server[COUCHDB_DATABASE]
     do_create(db)
     do_read(db)

@@ -1,10 +1,9 @@
-
 import argparse
 import copy
 import json
 import logging
 import multiprocessing as mp
-import Queue
+import queue as Queue
 import requests
 import time
 import re
@@ -37,7 +36,7 @@ def main(args):
         main_log.info("Project list : {0}".format(", ".join([x.luid for x in project_list])))
         masterProcess(args, project_list, main_log)
     elif args.test:
-        print "\n".join(x.__str__() for x in obtain_recent_projects(db_session))
+        print("\n".join(x.__str__() for x in obtain_recent_projects(db_session)))
 
 
 def setup_logging(name, args):
@@ -234,10 +233,14 @@ class CharonDocumentTracker:
             doc['analysis_status'] = 'TO_ANALYZE'
 
             # doc will not be updated if there is a connection error. Script will continue with the next sample
-            remote_sample=self.get_charon_sample(sample.name)
-            if remote_sample and remote_sample.get('status') == 'STALE' and self.seqruns_for_sample(sample.name) == self.remote_seqruns_for_sample(sample.name):
-                doc['status'] = 'STALE'
-            elif remote_sample is None:
+            try:
+                remote_sample = self.get_charon_sample(sample.name)
+                seqruns_lims = self.seqruns_for_sample(sample.name)
+                seqruns_charon = self.remote_seqruns_for_sample(sample.name)
+                if remote_sample and remote_sample.get('status') == 'STALE' and seqruns_lims == seqruns_charon:
+                    doc['status'] = 'STALE'
+            except Exception as e:
+                self.logger.error("An error occurred while updating {}: {}. Skipping it.".format(sample.name, e))
                 continue
 
             for udf in sample.udfs:
@@ -262,8 +265,8 @@ class CharonDocumentTracker:
             samples = self.session.query(Sample).from_statement(text(query)).all()
             samples_lists.append(samples)
         duplicate_libs_ids=set()
-        for i in xrange(0, len(libs)):
-            for j in xrange(i+1, len(libs)):
+        for i in range(0, len(libs)):
+            for j in range(i+1, len(libs)):
                 if set(samples_lists[i]) == set(samples_lists[j]):
                     duplicate_libs_ids.add(j)
 
@@ -338,8 +341,11 @@ class CharonDocumentTracker:
         if r.status_code == requests.codes.ok:
             for sr in r.json()['seqruns']:
                 seqruns.add(sr['seqrunid'])
-
-        return seqruns
+            return seqruns
+        elif r.status_code == requests.codes.not_found:
+            return None
+        else:
+            raise Exception('A connection error "{}" occurred while getting the seqrun from Charon'.format(r.status_code))
 
     def get_charon_sample(self, sampleid):
         session = requests.Session()
@@ -348,8 +354,10 @@ class CharonDocumentTracker:
         r = session.get(url, headers=headers)
         if r.status_code == requests.codes.ok:
             return r.json()
-        else:
+        elif r.status_code == requests.codes.not_found:
             return None
+        else:
+            raise Exception('A connection error "{}" occurred while getting the sample from Charon'.format(r.status_code))
 
     def update_charon(self):
         session = requests.Session()

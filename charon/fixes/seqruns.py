@@ -18,7 +18,7 @@ def write_seqrun_docs(db, libprep):
         doc['modified'] = libprep['modified']
         doc['created'] = libprep['created']
         db.save(doc)
-        print doc
+        print(doc)
 
 
 

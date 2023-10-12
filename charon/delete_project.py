@@ -14,9 +14,8 @@ if __name__ == '__main__':
     if len(rows) != 1:
         sys.exit('no such project')
     project = rows[0].doc
-    print 'Project', project['projectid'], project.get('title', '[no title]')
-    answer = raw_input('really delete? (y/n) > ')
+    print('Project', project['projectid'], project.get('title', '[no title]'))
+    answer = input('really delete? (y/n) > ')
     if utils.to_bool(answer):
         utils.delete_project(db, project)
-        print 'deleted'
-
+        print('deleted')

@@ -44,8 +44,8 @@ class SeqrunSaver(Saver):
               FloatField('mean_autosomal_coverage',
                     description='mean autosomal coverage', default=0),
               SelectField('genotype_status',
-                    description='The genotyping status of the sample.', options=constants.GENO_STATUS.values()),
-              #RangeFloatField('alignment_coverage', 
+                    description='The genotyping status of the sample.', options=list(constants.GENO_STATUS.values())),
+              #RangeFloatField('alignment_coverage',
               #                minimum=0.0,
               #                description='The coverage of the reference'
               #                ' genome, in percent. Cannot be None, Must be at least 0'),
@@ -118,7 +118,7 @@ class SeqrunCreate(RequestHandler):
             with self.saver(rqh=self, libprep=libprep) as saver:
                 saver.store()
                 seqrun = saver.doc
-        except (IOError, ValueError), msg:
+        except (IOError, ValueError) as msg:
             self.render('seqrun_create.html',
                         libprep=libprep,
                         fields=self.saver.fields,
@@ -151,7 +151,7 @@ class SeqrunEdit(RequestHandler):
         try:
             with self.saver(doc=seqrun, rqh=self) as saver:
                 saver.store()
-        except (IOError, ValueError), msg:
+        except (IOError, ValueError) as msg:
             self.render('seqrun_edit.html',
                         seqrun=seqrun,
                         fields=self.saver.fields,
@@ -182,15 +182,15 @@ class ApiSeqrun(ApiRequestHandler):
         seqrun = self.get_seqrun(projectid, sampleid, libprepid, seqrunid)
         try:
             data = json.loads(self.request.body)
-        except Exception, msg:
+        except Exception as msg:
             self.send_error(400, reason=str(msg))
         else:
             try:
                 with self.saver(doc=seqrun, rqh=self) as saver:
                     saver.store(data=data)
-            except ValueError, msg:
+            except ValueError as msg:
                 self.send_error(400, reason=str(msg))
-            except IOError, msg:
+            except IOError as msg:
                 self.send_error(409, reason=str(msg))
             else:
                 self.set_status(204)
@@ -227,17 +227,17 @@ class ApiSeqrun(ApiRequestHandler):
             doc['total_autosomal_coverage']=totalcov
             doc['total_sequenced_reads']=totalreads
             logging.info(doc)
-        except Exception, msg:
+        except Exception as msg:
             self.send_error(400, reason=str("Failed to update total_autosomal_coverage and total_sequenced_reads. Check that the reads field and the mean_autosomal_coverage field are not set to None"+msg))
-        except IOError, msg:
+        except IOError as msg:
             self.send_error(409, reason=str(msg))
         else:
             try:
                 with SampleSaver(doc=doc, rqh=self) as saver:
                     saver.store(data=doc)#failing to provide data will end up in an empty record.
-            except ValueError, msg:
+            except ValueError as msg:
                 self.send_error(400, reason=str("failed to update sample "+msg))
-            except IOError, msg:
+            except IOError as msg:
                 self.send_error(409, reason=str(msg))
             else:
                 self.set_status(204)
@@ -258,16 +258,16 @@ class ApiSeqrunCreate(ApiRequestHandler):
         libprep = self.get_libprep(projectid, sampleid, libprepid)
         try:
             data = json.loads(self.request.body)
-        except Exception, msg:
+        except Exception as msg:
             self.send_error(400, reason=str(msg))
         else:
             try:
                 with self.saver(rqh=self, libprep=libprep) as saver:
                     saver.store(data=data)
                     seqrun = saver.doc
-            except ValueError, msg:
+            except ValueError as msg:
                 raise tornado.web.HTTPError(400, reason=str(msg))
-            except IOError, msg:
+            except IOError as msg:
                 raise tornado.web.HTTPError(409, reason=str(msg))
             else:
                 url = self.reverse_url('api_seqrun',
@@ -283,7 +283,7 @@ class ApiSeqrunCreate(ApiRequestHandler):
     def update_sample_cov(self, projectid, sampleid):
         """this calculates the total of each mean autosomal coverage and updates sample leve.
         This should be done every time a seqrun is updated/created"""
-        logging.debug('Updating total_sequenced_reads and total_autosomal_coverage of sample {0}'.format(sampleid))    
+        logging.debug('Updating total_sequenced_reads and total_autosomal_coverage of sample {0}'.format(sampleid))
         try:
             seqruns = self.get_seqruns(projectid, sampleid)
             totalcov=0
@@ -294,22 +294,22 @@ class ApiSeqrunCreate(ApiRequestHandler):
                         totalcov+=float(seqrun['mean_autosomal_coverage'])
                     if seqrun['total_reads']:
                         totalreads+=float(seqrun['total_reads'])
-            
+
             doc= self.get_sample(projectid, sampleid)
 
             doc['total_autosomal_coverage']=totalcov
             doc['total_sequenced_reads']=totalreads
-        except Exception, msg:
+        except Exception as msg:
             self.send_error(400, reason=str(msg))
-        except IOError, msg:
+        except IOError as msg:
             self.send_error(409, reason=str(msg))
         else:
             try:
                 with SampleSaver(doc=doc, rqh=self) as saver:
                     saver.store(data=doc)#failing to provide data will end up in an empty record.
-            except ValueError, msg:
+            except ValueError as msg:
                 self.send_error(400, reason=str("Failed to update total_autosomal_coverage and total_sequenced_reads. Check that the reads field and the mean_autosomal_coverage field are not set to None"+msg))
-            except IOError, msg:
+            except IOError as msg:
                 self.send_error(409, reason=str(msg))
             else:
                 self.set_status(201)
@@ -360,4 +360,3 @@ class ApiSeqrunsDone(ApiRequestHandler):
                 filtered_seqr.append(s)
 
         self.write(json.dumps(filtered_seqr))
-
