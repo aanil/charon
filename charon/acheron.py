@@ -299,7 +299,7 @@ def prepareData(projname):
             if 'Status (manual)' in sample.udf and sample.udf['Status (manual)'] == "Aborted":
                 sampinfo['status']='ABORTED'
             #even when you want a process, it is easier to use getartifact, because you can filter by sample
-            libstart=lims.get_artifacts(process_type=list(pc_cg.PREPEND.keys()), sample_name=sample.name)
+            libstart=lims.get_artifacts(process_type=list(pc_cg.PREPEND.values()), sample_name=sample.name)
             #libstart=lims.get_processes(type=PREPSTART.values(), projectname=proj.name)
             libset=set()
             for art in libstart:
@@ -311,7 +311,7 @@ def prepareData(projname):
 
             sampinfo['libs']={}
             #get pools
-            seqevents=lims.get_processes(type=list(pc_cg.SEQUENCING.keys()), projectname=proj.name)
+            seqevents=lims.get_processes(type=list(pc_cg.SEQUENCING.values()), projectname=proj.name)
             alphaindex=65
             for lib in libs:
                 sampinfo['libs'][chr(alphaindex)]={}
