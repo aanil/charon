@@ -7,6 +7,7 @@ import queue as Queue
 import requests
 import time
 import re
+import LIMS2DB.objectsDB.process_categories as pc_cg
 
 from datetime import datetime
 from genologics_sql.tables import *
@@ -14,6 +15,7 @@ from genologics_sql.utils import *
 from genologics_sql.queries import *
 from sqlalchemy import text
 from charon.utils import QueueHandler
+
 
 REFERENCE_GENOME_PATTERN = re.compile("\,\s+([0-9A-z\._-]+)\)")
 
@@ -284,7 +286,7 @@ class CharonDocumentTracker:
                     inner join processiotracker piot on piot.inputartifactid = art.artifactid \
                     inner join artifact_sample_map asm on piot.inputartifactid = asm.artifactid \
                     inner join process pc on piot.processid = pc.processid \
-                    where asm.processid = {pcid} and pc.typeid in (8,806);".format(pcid=sample.processid)
+                    where asm.processid = {pcid} and pc.typeid in ({agrlibval_step_id});".format(pcid=sample.processid,agrlibval_step_id=','.join(pc_cg.AGRLIBVAL.keys()))
             libs = self.session.query(Artifact).from_statement(text(query)).all()
             alphaindex = 65
             for lib in libs:
@@ -300,7 +302,7 @@ class CharonDocumentTracker:
                 query = "select distinct pro.* from process pro \
                         inner join processiotracker piot on piot.processid = pro.processid \
                         inner join artifact_ancestor_map aam on piot.inputartifactid = aam.artifactid \
-                        where pro.typeid in (38,46,714,1454,1908,2612) and aam.ancestorartifactid = {lib_art}".format(lib_art=lib.artifactid)
+                        where pro.typeid in ({seq_step_id}) and aam.ancestorartifactid = {lib_art}".format(seq_step_id=','.join(pc_cg.SEQUENCING.keys()),lib_art=lib.artifactid)
                 seqs = self.session.query(Process).from_statement(text(query)).all()
                 for seq in seqs:
                     seqdoc = {}

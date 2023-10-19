@@ -6,6 +6,7 @@ from genologics.entities import *
 from genologics.lims import *
 from genologics.config import BASEURI, USERNAME, PASSWORD
 from datetime import date
+import LIMS2DB.objectsDB.process_categories as pc_cg
 
 import sys
 import os
@@ -19,129 +20,6 @@ import datetime
 
 
 lims = Lims(BASEURI, USERNAME, PASSWORD)
-
-INITALQC = {
-    '16' : 'Bioanalyzer QC (DNA) 4.0',
-    '18' : 'Bioanalyzer QC (RNA) 4.0',
-    '20' : 'CaliperGX QC (DNA)',
-    '24' : 'Customer Gel QC',
-    '63' : 'Quant-iT QC (DNA) 4.0',
-    '65' : 'Quant-iT QC (RNA) 4.0',
-    '66' : 'Qubit QC (DNA) 4.0',
-    '68' : 'Qubit QC (RNA) 4.0',
-    '116' : 'CaliperGX QC (RNA)',
-    '504' : 'Volume Measurement QC',
-    '954' : 'Automated Quant-iT QC (DNA) 4.0',
-    '1054' : 'Automated Quant-iT QC (RNA) 4.0',
-    '1157' : 'Fragment Analyzer QC (DNA) 4.0',
-    '1354' : 'Fragment Analyzer QC (RNA) 4.0'}
-AGRINITQC = {
-    '7' : 'Aggregate QC (DNA) 4.0',
-    '9' : 'Aggregate QC (RNA) 4.0'}
-POOLING = {
-    '42' : 'Library Pooling (Illumina SBS) 4.0',
-    '43' : 'Library Pooling (MiSeq) 4.0',
-    '44' : 'Library Pooling (TruSeq Amplicon) 4.0',
-    '45' : 'Library Pooling (TruSeq Exome) 4.0',
-    '58' : 'Pooling For Multiplexed Sequencing (SS XT) 4.0',
-    '255' : 'Library Pooling (Finished Libraries) 4.0',
-    '308' : 'Library Pooling (TruSeq Small RNA) 1.0',
-    '404' : 'Pre-Pooling (Illumina SBS) 4.0',
-    '506' : 'Pre-Pooling (MiSeq) 4.0',
-    '508' : 'Applications Pre-Pooling',
-    '716' : 'Library Pooling (HiSeq X) 1.0',
-    '1105' : 'Library Pooling (RAD-seq) v1.0',
-    '1307' : 'Library Pooling (MinION) 1.0',
-    '1506' : 'Pre-Pooling (NovaSeq) v2.0',
-    '1507' : 'Library Pooling (NovaSeq) v2.0',
-    '1906' : 'Pre-Pooling (NextSeq) v1.0',
-    '1907' : 'Library Pooling (NextSeq) v1.0',
-    '2605' : 'Pre-Pooling (NovaSeqXPlus) v1.0',
-    '2611' : 'Make Bulk Pool (NovaSeqXPlus) v1.0'}
-PREPSTART = {
-    '10' : 'Aliquot Libraries for Hybridization (SS XT)',
-    '33' : 'Fragment DNA (TruSeq DNA) 4.0',
-    '47' : 'mRNA Purification, Fragmentation & cDNA synthesis (TruSeq RNA) 4.0',
-    '117' : 'Applications Generic Process',
-    '308' : 'Library Pooling (TruSeq Small RNA) 1.0',
-    '405' : 'RiboZero depletion',
-    '407' : 'Fragment DNA (ThruPlex)',
-    '454' : 'ThruPlex template preparation and synthesis',
-    '605' : 'Tagmentation, Strand displacement and AMPure purification',
-    '612' : 'Fragmentation & cDNA synthesis (TruSeq RNA) 4.0',#sometimes, the earlier steps are skipped.
-    '1105' : 'Library Pooling (RAD-seq) v1.0',
-    '1305' : 'Adapter Ligation (MinION) 1.0',
-    '1404' : 'Fragmentation & cDNA synthesis (SMARTer Pico) 4.0',
-    '1705' : 'Library preparation (Chromium Genome v2)',
-    '1856' : 'Sample Crosslinking',
-    '1859' : 'End repair, adapter ligation, ligation capture and Index PCR (HiC)',
-    '2058' : 'Permeabilization and Second Strand Synthesis',
-    '2104' : 'Selection, cDNA Synthesis and Library Construction',
-    '2154' : 'PCR1 (Amplicon)',
-    '2155' : 'PCR2 (Amplicon)',
-    '2205' : 'Adapter ligation and reverse transcription',
-    '2254' : 'ONT End-Prep and Cleanup',
-    '2360' : 'Library Preparation & Amplification',
-    '2705' : 'Illumina DNA PCR-free Library Construction'}
-PREPEND = {
-    '109' : 'CA Purification',
-    '111' : 'Amplify Captured Libraries to Add Index Tags (SS XT) 4.0',
-    '157' : 'Applications Finish Prep',
-    '311' : 'Sample Placement (Size Selection)',
-    '406' : 'End repair, size selection, A-tailing and adapter ligation (TruSeq PCR-free DNA) 4.0',
-    '456' : 'Purification (ThruPlex)',
-    '606' : 'Size Selection (Pippin)',
-    '805' : 'NeoPrep Library Prep v1.0',
-    '1307' : 'Library Pooling (MinION) 1.0',
-    '1554' : 'Purification',
-    '1705' : 'Library preparation (Chromium Genome v2)',
-    '2060' : 'Visium Library Construction',
-    '2105' : 'Amplification and Purification',
-    '2206' : 'Amplify by PCR and Add Index Tags',
-    '2258' : 'ONT Adapter Ligation and Cleanup',
-    '2705' : 'Illumina DNA PCR-free Library Construction'}
-LIBVAL = {
-    '17' : 'Bioanalyzer QC (Library Validation) 4.0',
-    '20' : 'CaliperGX QC (DNA)',
-    '62' : 'qPCR QC (Library Validation) 4.0',
-    '64' : 'Quant-iT QC (Library Validation) 4.0',
-    '67' : 'Qubit QC (Library Validation) 4.0',
-    '504' : 'Volume Measurement QC',
-    '904' : 'Automated Quant-iT QC (Library Validation) 4.0',
-    '1154' : 'Fragment Analyzer QC (Library Validation) 4.0'}
-SEQSTART = {
-    '23' :'Cluster Generation (Illumina SBS) 4.0',
-    '26' :'Denature, Dilute and Load Sample (MiSeq) 4.0',
-    '710' :'Cluster Generation (HiSeq X) 1.0',
-    '1306' : 'Load Sample and Sequencing (MinION) 1.0',
-    '1458' : 'Load to Flowcell (NovaSeq 6000 v2.0)',
-    '1910' : 'Load to Flowcell (NextSeq v1.0)',
-    '2614' : 'Load to Flowcell (NovaSeqXPlus) v1.0'}
-DILSTART = {
-    '39' : 'Library Normalization (Illumina SBS) 4.0',
-    '40' : 'Library Normalization (MiSeq) 4.0',
-    '715': 'Library Normalization (HiSeq X) 1.0',
-    '1505': 'Library Normalization (NovaSeq) v2.0',
-    '1905' : 'Library Normalization (NextSeq) v1.0',
-    '2617' : 'Library Normalization (NovaSeqXPlus) v1.0'}
-SEQUENCING = {
-    '38' : 'Illumina Sequencing (Illumina SBS) 4.0',
-    '46' : 'MiSeq Run (MiSeq) 4.0',
-    '714': 'Illumina Sequencing (HiSeq X) 1.0',
-    '1306' : 'Load Sample and Sequencing (MinION) 1.0',
-    '1454': 'AUTOMATED - NovaSeq Run (NovaSeq 6000 v2.0)',
-    '1908' : 'Illumina Sequencing (NextSeq) v1.0',
-    '2260' : 'MinION Sequencing',
-    '2261' : 'Flongle Sequencing',
-    '2262' : 'PromethION Sequencing',
-    '2612' : 'NovaSeqXPlus Run v1.0'}
-WORKSET = {
-    '117' : 'Applications Generic Process',
-    '204' : 'Setup Workset/Plate'}
-SUMMARY = {
-    '356' : 'Project Summary 1.3'}
-DEMULTIPLEX={
-    '13' : 'Bcl Conversion & Demultiplexing (Illumina SBS) 4.0'}
 
 def main(options):
     if options.dummy:
@@ -421,7 +299,7 @@ def prepareData(projname):
             if 'Status (manual)' in sample.udf and sample.udf['Status (manual)'] == "Aborted":
                 sampinfo['status']='ABORTED'
             #even when you want a process, it is easier to use getartifact, because you can filter by sample
-            libstart=lims.get_artifacts(process_type=list(PREPEND.values()), sample_name=sample.name)
+            libstart=lims.get_artifacts(process_type=list(pc_cg.PREPEND.keys()), sample_name=sample.name)
             #libstart=lims.get_processes(type=PREPSTART.values(), projectname=proj.name)
             libset=set()
             for art in libstart:
@@ -433,7 +311,7 @@ def prepareData(projname):
 
             sampinfo['libs']={}
             #get pools
-            seqevents=lims.get_processes(type=list(SEQUENCING.values()), projectname=proj.name)
+            seqevents=lims.get_processes(type=list(pc_cg.SEQUENCING.keys()), projectname=proj.name)
             alphaindex=65
             for lib in libs:
                 sampinfo['libs'][chr(alphaindex)]={}
