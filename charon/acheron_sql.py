@@ -346,27 +346,6 @@ class CharonDocumentTracker:
                 fields['Type'] = udf.udfvalue
         return fields
 
-    def remove_duplicate_libs(self, libs):
-        samples_lists=[]
-        libs.sort(reverse=True, key=lambda x:(x.daterun or datetime.now()))
-        for lib in libs:
-            query = "select sa.* from sample sa inner join \
-            artifact_sample_map asm on sa.processid = asm.processid inner join \
-            processiotracker piot on asm.artifactid = piot.inputartifactid \
-            where piot.processid = {libid}".format(libid = lib.processid)
-            samples = self.session.query(Sample).from_statement(text(query)).all()
-            samples_lists.append(samples)
-        duplicate_libs_ids=set()
-        for i in range(0, len(libs)):
-            for j in range(i+1, len(libs)):
-                if set(samples_lists[i]) == set(samples_lists[j]):
-                    duplicate_libs_ids.add(j)
-
-        for idx in sorted(list(duplicate_libs_ids), reverse = True):
-            del libs[idx]
-
-        return libs
-
     def generate_new_libprep_doc(self):
         curtime = datetime.now().isoformat()
         fields = {}
