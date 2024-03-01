@@ -355,6 +355,9 @@ class CharonDocumentTracker:
 
 
     def update_charon_modifications(self, cur_doc, new_doc, url, session, headers):
+        """Check if new_doc stub document has any changes recorded in the LIMS compared to cur_doc (fetched from charon api). 
+        Only need to compare the keys present in the stub. If changes are detected, the document in charon is modified.
+        """
         keys_to_check = new_doc.keys()
         if are_dicts_different(keys_to_check, cur_doc, new_doc):
             merged = merge(cur_doc, new_doc)
