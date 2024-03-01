@@ -94,7 +94,7 @@ def merge(d1, d2):
             d3[key] = d2[key]
     return d3
 
-def is_modified(keys, dict1, dict2):
+def are_dicts_different(keys, dict1, dict2):
     for key in keys:
         if dict1.get(key) != dict2.get(key):
             return True
@@ -188,8 +188,11 @@ class CharonDocumentTracker:
             return order.index(doc['charon_doctype'])
 
         # order matters because samples depend on seqruns.
+        #Document stubs are generated for projects and samples with basic fields and the information that is updated from LIMS.
+        #If the document is not present in Charon, fields required for new documents are added to the stubs in the generate_new_*_doc methods.
+        #Since libpreps and seqruns are not updated by acheron, they are only added as new documents if not present in Charon.
         self.generate_project_doc_stub()
-        self.generate_samples_libprep_seqrun_docs_stub()
+        self.generate_samples_stubs_and_libprep_seqrun_docs()
         self.docs=sorted(self.docs, key=_compare_doctype)
         self.update_charon()
 
@@ -198,9 +201,24 @@ class CharonDocumentTracker:
         doc['charon_doctype'] = 'project'
         doc['projectid'] = self.project.luid
         doc['name'] = self.project.name
+        
+        for udf in self.project.udfs:
+            if udf.udfname == 'Bioinformatic QC':
+                if udf.udfvalue == 'WG re-seq':
+                    doc['best_practice_analysis'] = 'whole_genome_reseq'
+                else:
+                    doc['best_practice_analysis'] = udf.udfvalue
+            if udf.udfname == 'Uppnex ID' and udf.udfvalue:
+                doc['uppnex_id'] = udf.udfvalue.strip()
+            if udf.udfname == 'Reference genome' and udf.udfvalue:
+                matches = REFERENCE_GENOME_PATTERN.search(udf.udfvalue)
+                if matches:
+                    doc['reference'] = matches.group(1)
+                else:
+                    doc['reference'] = 'other'
         self.docs.append(doc)
     
-    def add_new_project_doc(self):
+    def add_new_project_doc_fields(self):
         fields = {}
         curtime = datetime.now().isoformat()
         fields['created'] = curtime
@@ -210,48 +228,36 @@ class CharonDocumentTracker:
         fields['status'] = 'OPEN'
         fields['delivery_token'] = 'not_under_delivery'
 
-        for udf in self.project.udfs:
-            if udf.udfname == 'Bioinformatic QC':
-                if udf.udfvalue == 'WG re-seq':
-                    fields['best_practice_analysis'] = 'whole_genome_reseq'
-                else:
-                    fields['best_practice_analysis'] = udf.udfvalue
-            if udf.udfname == 'Uppnex ID' and udf.udfvalue:
-                fields['uppnex_id'] = udf.udfvalue.strip()
-            if udf.udfname == 'Reference genome' and udf.udfvalue:
-                matches = REFERENCE_GENOME_PATTERN.search(udf.udfvalue)
-                if matches:
-                    field['reference'] = matches.group(1)
-                else:
-                    field['reference'] = 'other'
-        return fields
-    
-    def modify_project_doc(self):
-        fields = {}
-        for udf in self.project.udfs:
-            if udf.udfname == 'Bioinformatic QC':
-                if udf.udfvalue == 'WG re-seq':
-                    fields['best_practice_analysis'] = 'whole_genome_reseq'
-                else:
-                    fields['best_practice_analysis'] = udf.udfvalue
-            if udf.udfname == 'Uppnex ID' and udf.udfvalue:
-                fields['uppnex_id'] = udf.udfvalue.strip()
-            if udf.udfname == 'Reference genome' and udf.udfvalue:
-                matches = REFERENCE_GENOME_PATTERN.search(udf.udfvalue)
-                if matches:
-                    fields['reference'] = matches.group(1)
-                else:
-                    fields['reference'] = 'other'
-
         return fields
 
-    def generate_samples_libprep_seqrun_docs_stub(self):
+    def generate_samples_stubs_and_libprep_seqrun_docs(self):
+        curtime = datetime.now().isoformat()
         for sample in self.project.samples:
             sample_doc = {}
             sample_doc['charon_doctype'] = 'sample'
             sample_doc['projectid'] = self.project.luid
             sample_doc['sampleid'] = sample.name
             self.samples[sample.name] = sample
+            
+            try:
+                remote_sample = self.get_charon_sample(sample.name)
+                seqruns_lims = self.seqruns_for_sample(sample.name)
+                seqruns_charon = self.remote_seqruns_for_sample(sample.name)
+                if remote_sample and remote_sample.get('status') == 'STALE' and seqruns_lims == seqruns_charon:
+                    sample_doc['status'] = 'STALE'
+            except Exception as e:
+                self.logger.error("An error occurred while updating {}: {}. Skipping it.".format(sample.name, e))
+                continue
+
+            for udf in sample.udfs:
+                if udf.udfname == 'Status (manual)':
+                    if udf.udfvalue == 'Aborted':
+                        sample_doc['status'] = 'ABORTED'
+                if udf.udfname == 'Sample Links' and udf.udfvalue:
+                    sample_doc['Pair'] = udf.udfvalue
+                if udf.udfname == 'Sample Link Type' and udf.udfvalue:
+                    sample_doc['Type'] = udf.udfvalue
+
             self.docs.append(sample_doc)
 
             query = "select art.* from artifact art \
@@ -267,6 +273,9 @@ class CharonDocumentTracker:
                 lib_doc['projectid'] = self.project.luid
                 lib_doc['sampleid'] = sample.name
                 lib_doc['libprepid'] = chr(alphaindex)
+                lib_doc['created'] = curtime
+                lib_doc['modified'] = curtime
+                lib_doc['qc'] = "PASSED"
                 self.docs.append(lib_doc)
 
                 query = "select distinct pro.* from process pro \
@@ -280,6 +289,12 @@ class CharonDocumentTracker:
                     seqdoc['projectid'] = self.project.luid
                     seqdoc['sampleid'] = sample.name
                     seqdoc['libprepid'] = chr(alphaindex)
+                    seqdoc['created'] = curtime
+                    seqdoc['modified'] = curtime
+                    seqdoc['mean_autosomal_coverage'] = 0
+                    seqdoc['total_reads'] = 0
+                    seqdoc['alignment_status'] = 'NOT_RUNNING'
+                    seqdoc['delivery_status'] = 'NOT_DELIVERED'
                     for udf in seq.udfs:
                         if udf.udfname == "Run ID" and udf.udfvalue:
                             seqdoc['seqrunid'] = udf.udfvalue
@@ -290,7 +305,7 @@ class CharonDocumentTracker:
                 alphaindex += 1
 
 
-    def generate_new_samples_doc(self, sample_name):
+    def add_new_samples_doc_fields(self, sample_name):
         fields = {}
         curtime = datetime.now().isoformat()
         fields['created'] = curtime
@@ -300,70 +315,6 @@ class CharonDocumentTracker:
         fields['total_autosomal_coverage'] = 0
         fields['status'] = 'FRESH'
         fields['analysis_status'] = 'TO_ANALYZE'
-
-        # doc will not be updated if there is a connection error. Script will continue with the next sample
-        try:
-            remote_sample = self.get_charon_sample(sample_name)
-            seqruns_lims = self.seqruns_for_sample(sample_name)
-            seqruns_charon = self.remote_seqruns_for_sample(sample_name)
-            if remote_sample and remote_sample.get('status') == 'STALE' and seqruns_lims == seqruns_charon:
-                fields['status'] = 'STALE'
-        except Exception as e:
-            self.logger.error("An error occurred while updating {}: {}. Skipping it.".format(sample.name, e))
-            return {}
-
-        for udf in self.samples[sample_name].udfs:
-            if udf.udfname == 'Status (manual)':
-                if udf.udfvalue == 'Aborted':
-                    fields['status'] = 'ABORTED'
-            if udf.udfname == 'Sample Links' and udf.udfvalue:
-                fields['Pair'] = udf.udfvalue
-            if udf.udfname == 'Sample Link Type' and udf.udfvalue:
-                fields['Type'] = udf.udfvalue
-        return fields
-
-    
-    def modify_sample_doc(self, sample_name):
-        fields = {}
-        # doc will not be updated if there is a connection error. Script will continue with the next sample
-        try:
-            remote_sample = self.get_charon_sample(sample_name)
-            seqruns_lims = self.seqruns_for_sample(sample_name)
-            seqruns_charon = self.remote_seqruns_for_sample(sample_name)
-            if remote_sample and remote_sample.get('status') == 'STALE' and seqruns_lims == seqruns_charon:
-                fields['status'] = 'STALE'
-        except Exception as e:
-            self.logger.error("An error occurred while updating {}: {}. Skipping it.".format(sample.name, e))
-            return {}
-
-        for udf in self.samples[sample_name].udfs:
-            if udf.udfname == 'Status (manual)':
-                if udf.udfvalue == 'Aborted':
-                    fields['status'] = 'ABORTED'
-            if udf.udfname == 'Sample Links' and udf.udfvalue:
-                fields['Pair'] = udf.udfvalue
-            if udf.udfname == 'Sample Link Type' and udf.udfvalue:
-                fields['Type'] = udf.udfvalue
-        return fields
-
-    def generate_new_libprep_doc(self):
-        curtime = datetime.now().isoformat()
-        fields = {}
-        fields['created'] = curtime
-        fields['modified'] = curtime
-        fields['qc'] = "PASSED"
-        
-        return fields
-    
-    def generate_new_seqrun_doc(self):
-        curtime = datetime.now().isoformat()
-        fields = {}
-        fields['created'] = curtime
-        fields['modified'] = curtime
-        fields['mean_autosomal_coverage'] = 0
-        fields['total_reads'] = 0
-        fields['alignment_status'] = 'NOT_RUNNING'
-        fields['delivery_status'] = 'NOT_DELIVERED'
 
         return fields
 
@@ -405,10 +356,11 @@ class CharonDocumentTracker:
 
     def update_charon_modifications(self, cur_doc, new_doc, url, session, headers):
         keys_to_check = new_doc.keys()
-        if is_modified(keys_to_check, cur_doc, new_doc):
+        if are_dicts_different(keys_to_check, cur_doc, new_doc):
             merged = merge(cur_doc, new_doc)
             if merged != cur_doc:
                 curtime = datetime.now().isoformat()
+                #Modification date is added only if the document has changed
                 merged['modified'] = curtime
                 rq = session.put(url, headers=headers, data=json.dumps(merged))
                 doc_type = cur_doc['charon_doctype']
@@ -428,11 +380,13 @@ class CharonDocumentTracker:
             try:
                 if doc['charon_doctype'] == 'project':
                     self.logger.info(f"trying to update doc {doc['projectid']}")
+                    #Check if the project exists in Charon
                     url = f"{self.charon_url}/api/v1/project/{doc['projectid']}"
                     r = session.get(url, headers=headers)
+                    #If the project doc does not exist, create it by adding the fields required for new documents to the stub
                     if r.status_code == 404:
                         url = "{0}/api/v1/project".format(self.charon_url)
-                        doc.update(self.add_new_project_doc())
+                        doc.update(self.add_new_project_doc_fields())
                         rq = session.post(url, headers=headers, data=json.dumps(doc))
                         if rq.status_code == requests.codes.created:
                             self.logger.info(f"project {doc['projectid']} successfully updated".format())
@@ -440,14 +394,16 @@ class CharonDocumentTracker:
                             self.logger.error(f"project {doc['projectid']} failed to be updated : {rq.text}")
                     else:
                         pj = r.json()
-                        doc.update(self.modify_project_doc())
                         self.update_charon_modifications(pj, doc, url, session, headers)
+                
                 elif doc['charon_doctype'] == 'sample':
+                    #Check if the sample exists in Charon
                     url = f"{self.charon_url}/api/v1/sample/{doc['projectid']}/{doc['sampleid']}"
                     r = session.get(url, headers=headers)
+                    #If the sample doc does not exist, create it by adding the fields required for new documents to the stub
                     if r.status_code == 404:
                         url = "{0}/api/v1/sample/{1}".format(self.charon_url, doc['projectid'])
-                        doc.update(self.generate_new_samples_doc(doc['sampleid']))
+                        doc.update(self.add_new_samples_doc_fields(doc['sampleid']))
                         rq = session.post(url, headers=headers, data=json.dumps(doc))
                         if rq.status_code == requests.codes.created:
                             self.logger.info(f"sample {doc['projectid']}/{doc['sampleid']} successfully updated")
@@ -455,25 +411,24 @@ class CharonDocumentTracker:
                             self.logger.error(f"sample {doc['projectid']}/{doc['sampleid']} failed to be updated : {rq.text}")
                     else:
                         pj = r.json()
-                        doc.update(self.modify_sample_doc(doc['sampleid']))
                         self.update_charon_modifications(pj, doc, url, session, headers)
+                
                 elif doc['charon_doctype'] == 'libprep':
                     url = f"{self.charon_url}/api/v1/libprep/{doc['projectid']}/{doc['sampleid']}/{doc['libprepid']}"
                     r = session.get(url, headers=headers)
                     if r.status_code == 404:
                         url = f"{self.charon_url}/api/v1/libprep/{doc['projectid']}/{doc['sampleid']}"
-                        doc.update(self.generate_new_libprep_doc())
                         rq = session.post(url, headers=headers, data=json.dumps(doc))
                         if rq.status_code == requests.codes.created:
                             self.logger.info(f"libprep {doc['projectid']}/{doc['sampleid']}/{doc['libprepid']} successfully updated")
                         else:
                             self.logger.error(f"libprep {doc['projectid']}/{doc['sampleid']}/{doc['libprepid']} failed to be updated : {rq.text}")
+                
                 elif doc['charon_doctype'] == 'seqrun':
                     url = f"{self.charon_url}/api/v1/seqrun/{doc['projectid']}/{doc['sampleid']}/{doc['libprepid']}/{doc['seqrunid']}"
                     r = session.get(url, headers=headers)
                     if r.status_code == 404:
                         url =f"{self.charon_url}/api/v1/seqrun/{doc['projectid']}/{doc['sampleid']}/{doc['libprepid']}"
-                        doc.update(self.generate_new_seqrun_doc())
                         rq = session.post(url, headers=headers, data=json.dumps(doc))
                         if rq.status_code == requests.codes.created:
                             self.logger.info(f"seqrun {doc['projectid']}/{doc['sampleid']}/{doc['libprepid']}/{doc['seqrunid']} successfully updated")
