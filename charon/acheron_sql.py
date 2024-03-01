@@ -94,11 +94,6 @@ def merge(d1, d2):
             d3[key] = d2[key]
     return d3
 
-def are_dicts_different(keys, dict1, dict2):
-    for key in keys:
-        if dict1.get(key) != dict2.get(key):
-            return True
-    return False
 
 def masterProcess(args, projectList, logger):
     projectsQueue = mp.JoinableQueue()
@@ -358,8 +353,18 @@ class CharonDocumentTracker:
         """Check if new_doc stub document has any changes recorded in the LIMS compared to cur_doc (fetched from charon api). 
         Only need to compare the keys present in the stub. If changes are detected, the document in charon is modified.
         """
-        keys_to_check = new_doc.keys()
-        if are_dicts_different(keys_to_check, cur_doc, new_doc):
+
+        def are_keyvalues_in_dict2_different_than_in_dict1(dict1, dict2):
+            """Check if the values of the keys in the dict2 are present in the dict1.
+                If not, return True. If the values are the same, return False.
+                This is not a general function to compare two dicts.
+                """
+            for key in dict2.keys():
+                if dict1.get(key, 'unlikely default value') != dict2.get(key):
+                    return True
+            return False
+
+        if are_keyvalues_in_dict2_different_than_in_dict1(cur_doc, new_doc):
             merged = merge(cur_doc, new_doc)
             if merged != cur_doc:
                 curtime = datetime.now().isoformat()
