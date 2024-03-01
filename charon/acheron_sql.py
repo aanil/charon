@@ -173,7 +173,6 @@ class CharonDocumentTracker:
         self.session = session
         self.project = project
         self.logger = logger
-        self.samples = {}
         self.docs = []
 
     def run(self):
@@ -232,7 +231,6 @@ class CharonDocumentTracker:
             sample_doc['charon_doctype'] = 'sample'
             sample_doc['projectid'] = self.project.luid
             sample_doc['sampleid'] = sample.name
-            self.samples[sample.name] = sample
             
             try:
                 remote_sample = self.get_charon_sample(sample.name)
@@ -300,7 +298,7 @@ class CharonDocumentTracker:
                 alphaindex += 1
 
 
-    def add_new_samples_doc_fields(self, sample_name):
+    def add_new_samples_doc_fields(self):
         fields = {}
         curtime = datetime.now().isoformat()
         fields['created'] = curtime
@@ -411,7 +409,7 @@ class CharonDocumentTracker:
                     #If the sample doc does not exist, create it by adding the fields required for new documents to the stub
                     if r.status_code == 404:
                         url = "{0}/api/v1/sample/{1}".format(self.charon_url, doc['projectid'])
-                        doc.update(self.add_new_samples_doc_fields(doc['sampleid']))
+                        doc.update(self.add_new_samples_doc_fields()
                         rq = session.post(url, headers=headers, data=json.dumps(doc))
                         if rq.status_code == requests.codes.created:
                             self.logger.info(f"sample {doc['projectid']}/{doc['sampleid']} successfully updated")
