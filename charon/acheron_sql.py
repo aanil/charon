@@ -96,7 +96,7 @@ def merge(d1, d2):
 
 def is_modified(keys, dict1, dict2):
     for key in keys:
-        if dict1.get(key) != str(dict2.get(key)):
+        if dict1.get(key) != dict2.get(key):
             return True
     return False
 
@@ -248,9 +248,9 @@ class CharonDocumentTracker:
     def generate_samples_libprep_seqrun_docs_stub(self):
         for sample in self.project.samples:
             sample_doc = {}
-            doc['charon_doctype'] = 'sample'
-            doc['projectid'] = self.project.luid
-            doc['sampleid'] = sample.name
+            sample_doc['charon_doctype'] = 'sample'
+            sample_doc['projectid'] = self.project.luid
+            sample_doc['sampleid'] = sample.name
             self.samples[sample.name] = sample
             self.docs.append(sample_doc)
 
@@ -263,10 +263,10 @@ class CharonDocumentTracker:
             alphaindex = 65
             for lib in libs:
                 lib_doc = {}
-                doc['charon_doctype'] = 'libprep'
-                doc['projectid'] = self.project.luid
-                doc['sampleid'] = sample.name
-                doc['libprepid'] = chr(alphaindex)
+                lib_doc['charon_doctype'] = 'libprep'
+                lib_doc['projectid'] = self.project.luid
+                lib_doc['sampleid'] = sample.name
+                lib_doc['libprepid'] = chr(alphaindex)
                 self.docs.append(lib_doc)
 
                 query = "select distinct pro.* from process pro \
@@ -281,7 +281,7 @@ class CharonDocumentTracker:
                     seqdoc['sampleid'] = sample.name
                     seqdoc['libprepid'] = chr(alphaindex)
                     for udf in seq.udfs:
-                        if udf.udfname == "Run ID":
+                        if udf.udfname == "Run ID" and udf.udfvalue:
                             seqdoc['seqrunid'] = udf.udfvalue
                             break
                     if 'seqrunid' in seqdoc:
@@ -316,9 +316,9 @@ class CharonDocumentTracker:
             if udf.udfname == 'Status (manual)':
                 if udf.udfvalue == 'Aborted':
                     fields['status'] = 'ABORTED'
-            if udf.udfname == 'Sample Links':
+            if udf.udfname == 'Sample Links' and udf.udfvalue:
                 fields['Pair'] = udf.udfvalue
-            if udf.udfname == 'Sample Link Type':
+            if udf.udfname == 'Sample Link Type' and udf.udfvalue:
                 fields['Type'] = udf.udfvalue
         return fields
 
@@ -340,9 +340,9 @@ class CharonDocumentTracker:
             if udf.udfname == 'Status (manual)':
                 if udf.udfvalue == 'Aborted':
                     fields['status'] = 'ABORTED'
-            if udf.udfname == 'Sample Links':
+            if udf.udfname == 'Sample Links' and udf.udfvalue:
                 fields['Pair'] = udf.udfvalue
-            if udf.udfname == 'Sample Link Type':
+            if udf.udfname == 'Sample Link Type' and udf.udfvalue:
                 fields['Type'] = udf.udfvalue
         return fields
 
