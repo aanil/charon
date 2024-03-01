@@ -358,7 +358,7 @@ class CharonDocumentTracker:
                 This is not a general function to compare two dicts.
                 """
             for key in dict2.keys():
-                if dict1.get(key, 'unlikely default value') != dict2.get(key):
+                if key not in dict1 or dict1[key] != dict2[key]:
                     return True
             return False
 
