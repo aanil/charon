@@ -198,10 +198,11 @@ class CharonDocumentTracker:
         
         for udf in self.project.udfs:
             if udf.udfname == 'Bioinformatic QC':
-                if udf.udfvalue == 'WG re-seq':
-                    doc['best_practice_analysis'] = 'whole_genome_reseq'
-                else:
-                    doc['best_practice_analysis'] = udf.udfvalue
+                if udf.udfvalue:
+                    if udf.udfvalue == 'WG re-seq':
+                        doc['best_practice_analysis'] = 'whole_genome_reseq'
+                    else:
+                        doc['best_practice_analysis'] = udf.udfvalue
             if udf.udfname == 'Uppnex ID' and udf.udfvalue:
                 doc['uppnex_id'] = udf.udfvalue.strip()
             if udf.udfname == 'Reference genome' and udf.udfvalue:
@@ -385,7 +386,7 @@ class CharonDocumentTracker:
         for doc in self.docs:
             try:
                 if doc['charon_doctype'] == 'project':
-                    self.logger.info(f"trying to update doc {doc['projectid']}")
+                    self.logger.info(f"checking for updates to doc {doc['projectid']}")
                     #Check if the project exists in Charon
                     url = f"{self.charon_url}/api/v1/project/{doc['projectid']}"
                     r = session.get(url, headers=headers)
@@ -409,7 +410,7 @@ class CharonDocumentTracker:
                     #If the sample doc does not exist, create it by adding the fields required for new documents to the stub
                     if r.status_code == 404:
                         url = "{0}/api/v1/sample/{1}".format(self.charon_url, doc['projectid'])
-                        doc.update(self.add_new_samples_doc_fields()
+                        doc.update(self.add_new_samples_doc_fields())
                         rq = session.post(url, headers=headers, data=json.dumps(doc))
                         if rq.status_code == requests.codes.created:
                             self.logger.info(f"sample {doc['projectid']}/{doc['sampleid']} successfully updated")
