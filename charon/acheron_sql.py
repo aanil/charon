@@ -17,7 +17,7 @@ from sqlalchemy import text
 from charon.utils import QueueHandler
 
 
-REFERENCE_GENOME_PATTERN = re.compile("\,\s+([0-9A-z\._-]+)\)")
+REFERENCE_GENOME_PATTERN = re.compile(r"\,\s+([0-9A-z\._-]+)\)")
 
 
 def main(args):
