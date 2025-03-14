@@ -173,23 +173,26 @@ class RequestHandler(tornado.web.RequestHandler):
             pj_ids.append(row.value)
             return pj_ids
 
-    def get_projects(self, startkey=None, endkey=None, limit=20):
+    def get_projects(self, from_key=None, to_key=None, limit=20):
         "Get all projects."
-        if startkey:
-            view = self.db.view('project/projectid', startkey=startkey, limit=limit + 1)
-        elif endkey:
-            view = self.db.view('project/projectid', startkey=endkey, descending=True, limit=limit + 1)
+        if from_key:
+            view = self.db.view('project/modified', startkey=from_key, descending=True, limit=limit + 1)
+        elif to_key:
+            view = self.db.view('project/modified', startkey=to_key, limit=limit + 1)
         else:
-            view = self.db.view('project/projectid', limit=limit + 1)
-        projects = [self.get_project(r.key) for r in view]
+            view = self.db.view('project/modified', limit=limit + 1, descending=True)
 
-        # Sort the projects by the key (if necessary)
+        projects = [self.get_project(r.value) for r in view]
         has_more = len(projects) > limit
 
-        next_startkey = projects[-1]['projectid'] if has_more else None
-        prev_endkey = projects[0]['projectid'] if projects else None
-        
-        projects.sort(key=lambda project: project.get('projectid'))
+        # Sort the projects by the key desc if going backwards
+        if to_key:
+            projects.sort(key=lambda project: project.get('modified'), reverse=True)
+
+        from_key = projects[0]['modified'] if projects else None
+        to_key = projects[-1]['modified'] if has_more else None
+        if has_more:
+            projects = projects[:limit]
         
 
         view1 = self.db.view('sample/count')
@@ -223,7 +226,7 @@ class RequestHandler(tornado.web.RequestHandler):
                 project['libprep_count'] = 0
             else:
                 project['libprep_count'] = row.value
-        return projects, has_more, next_startkey, prev_endkey
+        return projects, has_more, from_key, to_key
 
     def get_sample(self, projectid, sampleid):
         """Get the sample by the projectid and sampleid.

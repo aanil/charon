@@ -360,17 +360,12 @@ class Projects(RequestHandler):
     def get(self):
         page = int(self.get_argument('page', 1))
         limit = 50
-        startkey = self.get_argument('startkey', None)
-        endkey = self.get_argument('endkey', None)
+        from_key = self.get_argument('from', None)
+        to_key = self.get_argument('to', None)
 
-        projects, has_more, next_startkey, prev_endkey = self.get_projects(startkey=startkey, endkey=endkey, limit=limit)
+        projects, has_more, curr_startkey, next_startkey = self.get_projects(from_key=from_key, to_key=to_key, limit=limit)
 
-        if page>1:
-            next_startkey = next_startkey if has_more else None
-        else:
-            next_startkey = projects[0]['projectid'] if has_more else None
-
-        self.render('projects.html', projects=projects, page=page, has_more=has_more, next_startkey=next_startkey, prev_endkey=prev_endkey)
+        self.render('projects.html', projects=projects, page=page, has_more=has_more, from_key=curr_startkey, to_key=next_startkey)
 
 
 class ApiProject(UploadSamplesMixin, ApiRequestHandler):
