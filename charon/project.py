@@ -358,8 +358,19 @@ class Projects(RequestHandler):
 
     @tornado.web.authenticated
     def get(self):
-        projects = self.get_projects()
-        self.render('projects.html', projects=projects)
+        page = int(self.get_argument('page', 1))
+        limit = 50
+        startkey = self.get_argument('startkey', None)
+        endkey = self.get_argument('endkey', None)
+
+        projects, has_more, next_startkey, prev_endkey = self.get_projects(startkey=startkey, endkey=endkey, limit=limit)
+
+        if page>1:
+            next_startkey = next_startkey if has_more else None
+        else:
+            next_startkey = projects[0]['projectid'] if has_more else None
+
+        self.render('projects.html', projects=projects, page=page, has_more=has_more, next_startkey=next_startkey, prev_endkey=prev_endkey)
 
 
 class ApiProject(UploadSamplesMixin, ApiRequestHandler):

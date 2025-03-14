@@ -173,15 +173,30 @@ class RequestHandler(tornado.web.RequestHandler):
             pj_ids.append(row.value)
             return pj_ids
 
-    def get_projects(self):
+    def get_projects(self, startkey=None, endkey=None, limit=20):
         "Get all projects."
-        all = [self.get_project(r.key) for r in
-               self.db.view('project/projectid')]
+        if startkey:
+            view = self.db.view('project/projectid', startkey=startkey, limit=limit + 1)
+        elif endkey:
+            view = self.db.view('project/projectid', startkey=endkey, descending=True, limit=limit + 1)
+        else:
+            view = self.db.view('project/projectid', limit=limit + 1)
+        projects = [self.get_project(r.key) for r in view]
+
+        # Sort the projects by the key (if necessary)
+        has_more = len(projects) > limit
+
+        next_startkey = projects[-1]['projectid'] if has_more else None
+        prev_endkey = projects[0]['projectid'] if projects else None
+        
+        projects.sort(key=lambda project: project.get('projectid'))
+        
+
         view1 = self.db.view('sample/count')
         view2 = self.db.view('sample/count_done')
         view3 = self.db.view('libprep/count', group_level=1)
         view4 = self.db.view('sample/count_delivered')
-        for project in all:
+        for project in projects:
             try:
                 row = view1[project['projectid']].rows[0]
             except IndexError:
@@ -208,7 +223,7 @@ class RequestHandler(tornado.web.RequestHandler):
                 project['libprep_count'] = 0
             else:
                 project['libprep_count'] = row.value
-        return all
+        return projects, has_more, next_startkey, prev_endkey
 
     def get_sample(self, projectid, sampleid):
         """Get the sample by the projectid and sampleid.

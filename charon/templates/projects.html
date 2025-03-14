@@ -51,4 +51,13 @@ Projects
 
 </table>
 
+<!-- Pagination controls -->
+<div class="pagination">
+  {% if page > 1 %}
+    <a href="{{ reverse_url('projects') }}?page={{ page - 1 }}&endkey={{ prev_endkey }}">&laquo; Previous</a>
+  {% end %}
+  {% if has_more %}
+    <a href="{{ reverse_url('projects') }}?page={{ page + 1 }}&startkey={{ next_startkey }}">Next &raquo;</a>
+  {% end %}
+
 {% end %}
