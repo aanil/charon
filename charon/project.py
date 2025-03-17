@@ -6,7 +6,6 @@ import csv
 import io
 
 import tornado.web
-import couchdb
 
 import charon.constants as cst
 import charon.utils as utls

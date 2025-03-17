@@ -6,7 +6,6 @@ import weakref
 import functools
 
 import tornado.web
-import couchdb
 
 import charon
 from . import settings
