@@ -6,7 +6,6 @@ import weakref
 import functools
 
 import tornado.web
-import couchdb
 
 import charon
 from . import settings
@@ -173,15 +172,33 @@ class RequestHandler(tornado.web.RequestHandler):
             pj_ids.append(row.value)
             return pj_ids
 
-    def get_projects(self):
+    def get_projects(self, from_key=None, to_key=None, limit=20):
         "Get all projects."
-        all = [self.get_project(r.key) for r in
-               self.db.view('project/projectid')]
+        if from_key:
+            view = self.db.view('project/modified', startkey=from_key, descending=True, limit=limit + 1)
+        elif to_key:
+            view = self.db.view('project/modified', startkey=to_key, limit=limit + 1)
+        else:
+            view = self.db.view('project/modified', limit=limit + 1, descending=True)
+
+        projects = [self.get_project(r.value) for r in view]
+        has_more = len(projects) > limit
+
+        # Sort the projects by the key desc if going backwards
+        if to_key:
+            projects.sort(key=lambda project: project.get('modified'), reverse=True)
+
+        from_key = projects[0]['modified'] if projects else None
+        to_key = projects[-1]['modified'] if has_more else None
+        if has_more:
+            projects = projects[:limit]
+        
+
         view1 = self.db.view('sample/count')
         view2 = self.db.view('sample/count_done')
         view3 = self.db.view('libprep/count', group_level=1)
         view4 = self.db.view('sample/count_delivered')
-        for project in all:
+        for project in projects:
             try:
                 row = view1[project['projectid']].rows[0]
             except IndexError:
@@ -208,7 +225,7 @@ class RequestHandler(tornado.web.RequestHandler):
                 project['libprep_count'] = 0
             else:
                 project['libprep_count'] = row.value
-        return all
+        return projects, has_more, from_key, to_key
 
     def get_sample(self, projectid, sampleid):
         """Get the sample by the projectid and sampleid.

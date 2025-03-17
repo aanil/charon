@@ -11,7 +11,6 @@ import unicodedata
 import tornado.web
 import couchdb
 import yaml
-import requests
 
 import charon
 from . import constants
@@ -52,11 +51,13 @@ def load_settings(filepath=None):
     except KeyError:
         pass
     try:
-        kwargs['filename'] = settings['LOGGING_FILENAME']
-    except KeyError:
-        pass
-    try:
-        kwargs['filemode'] = settings['LOGGING_FILEMODE']
+        rotating_file_handler = logging.handlers.RotatingFileHandler(
+            settings['LOGGING_FILENAME'],
+            mode=settings.get('LOGGING_FILEMODE', 'a'),
+            maxBytes=1024 * 1024 * 100,
+            backupCount=5
+        )  # 5 files of 100MB
+        kwargs['handlers'] = [rotating_file_handler]
     except KeyError:
         pass
     logging.basicConfig(**kwargs)

@@ -6,7 +6,6 @@ import csv
 import io
 
 import tornado.web
-import couchdb
 
 import charon.constants as cst
 import charon.utils as utls
@@ -358,8 +357,14 @@ class Projects(RequestHandler):
 
     @tornado.web.authenticated
     def get(self):
-        projects = self.get_projects()
-        self.render('projects.html', projects=projects)
+        page = int(self.get_argument('page', 1))
+        limit = 50
+        from_key = self.get_argument('from', None)
+        to_key = self.get_argument('to', None)
+
+        projects, has_more, curr_startkey, next_startkey = self.get_projects(from_key=from_key, to_key=to_key, limit=limit)
+
+        self.render('projects.html', projects=projects, page=page, has_more=has_more, from_key=curr_startkey, to_key=next_startkey)
 
 
 class ApiProject(UploadSamplesMixin, ApiRequestHandler):
