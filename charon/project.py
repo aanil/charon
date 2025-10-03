@@ -400,6 +400,10 @@ class ApiProject(UploadSamplesMixin, ApiRequestHandler):
         if not project: return
         try:
             data = json.loads(self.request.body)
+            if "delivery_projects" in data:
+                # Make sure it's a list
+                if isinstance(data["delivery_projects"], str):
+                    data["delivery_projects"] = ast.literal_eval(data["delivery_projects"])
         except Exception as msg:
             logging.debug("Exception: %s", msg)
             self.send_error(400, reason=str(msg))
