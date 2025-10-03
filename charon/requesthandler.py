@@ -75,7 +75,7 @@ class RequestHandler(tornado.web.RequestHandler):
                     api_token = self.request.headers['X-Charon-API-token']
                     rows = list(self.db.view('user/api_token', key=api_token))
                     if len(rows) != 1: raise KeyError
-                    user = self.get_user(rows[0].value)
+                    user = self.get_user(rows[0]['value'])
                     if user.get('status') != constants.ACTIVE: raise KeyError
                 except KeyError:
                     return None
