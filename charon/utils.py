@@ -316,7 +316,7 @@ def delete_sample(db, sample):
     libpreps = [r['doc'] for r in view_result]
     for libprep in libpreps:
         delete_libprep(db, libprep)
-    del db.delete(sample)
+    db.delete(sample)
 
 def delete_libprep(db, libprep):
     "Delete the libprep and all its dependent entities."
@@ -330,12 +330,12 @@ def delete_libprep(db, libprep):
     for seqrun in seqruns:
         delete_seqrun(db, seqrun)
     logging.debug("deleting libprep %s", startkey)
-    del db.delete(libprep)
+    db.delete(libprep)
 
 def delete_seqrun(db, seqrun):
     "Delete the seqrun and all its dependent entities."
     delete_logs(db, seqrun['_id'])
-    del db.delete(seqrun)
+    db.delete(seqrun)
 
 def delete_logs(db, id):
     "Delete the log documents for the given doc id."
