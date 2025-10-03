@@ -112,7 +112,7 @@ class CloudantDatabaseWrapper:
         ).get_result()
         return response
 
-    def get_attachemnt(self, doc_id, attachment_name):
+    def get_attachment(self, doc_id, attachment_name):
         """Get an attachment from a document."""
         response = self.client.get_attachment(
             db=self.db_name,
