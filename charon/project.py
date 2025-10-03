@@ -1,5 +1,6 @@
 " Charon: Project entity interface. "
 
+import ast
 import logging
 import json
 import csv
@@ -455,6 +456,10 @@ class ApiProjectCreate(ApiRequestHandler):
         Return HTTP 409 if there is a document revision conflict."""
         try:
             data = json.loads(self.request.body)
+            if "delivery_projects" in data:
+                # Make sure it's a list
+                if isinstance(data["delivery_projects"], str):
+                    data["delivery_projects"] = ast.literal_eval(data["delivery_projects"])
         except Exception as msg:
             self.send_error(400, reason=str(msg))
         else:
