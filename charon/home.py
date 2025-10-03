@@ -36,7 +36,6 @@ def sampleStats(handler, projectid=None):
     db = handler.db
     view = 'sample/summary_count'
     pview = 'project/projectid'
-    seqview = handler.db.view('sample/sequenced', group=True)
     seqview = 'sample/sequenced'
     try:
         data['tot'] = db.view(view, key=total)[0]['value']
